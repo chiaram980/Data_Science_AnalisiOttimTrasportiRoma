@@ -12,7 +12,7 @@
  3.Modello predittivo
    Dopo la creazione del file dei ritardi consistenti è possile eseguire l'implementazione del modello predittivo "modello_predittivo.ipynb"
  4.Modello prescrittivo   
-   
+   Per questa fase di ottimizzazione procedere con "modello_prescrittivo.ipynb"
     
     
     
