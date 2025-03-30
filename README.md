@@ -8,8 +8,11 @@
     Mentre per i dati dinamici è possibile scaricare il file "rome_trip_updates.pb" e decriptarlo eseguendo il seguente script "rome_trip_udates.py"
     Per procedere con la fase di preprocessing eseguire lo script "pre-processing.ipynb"
  2. Calcolo  e analisi dei ritardi
-    Al termine della fase di preprocessing procedere con l'esecuzione del file "calcolo_ritardi.ipynb"    
-
+    Al termine della fase di preprocessing procedere con l'esecuzione del file "calcolo_ritardi.ipynb" e per l'analisi eseguire "analisi_ritardi.ipynb"
+ 3.Modello predittivo
+   Dopo la creazione del file dei ritardi consistenti è possile eseguire l'implementazione del modello predittivo "modello_predittivo.ipynb"
+ 4.Modello prescrittivo   
+   
     
     
     
