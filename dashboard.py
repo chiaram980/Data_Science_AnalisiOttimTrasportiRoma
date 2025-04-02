@@ -168,13 +168,13 @@ st.download_button(
 st.subheader("Visualizza fermate di una linea specifica")
 
 
-gtfs_path = "dataset"
+
 
 #Carica dati principali
 try:
-    routes = pd.read_csv(os.path.join(gtfs_path, "routes.txt"), dtype=str, low_memory=False)
-    trips = pd.read_csv(os.path.join(gtfs_path, "trips.txt"), dtype=str, low_memory=False)
-    stops = pd.read_csv(os.path.join(gtfs_path, "stops.txt"), dtype=str, low_memory=False)
+    routes = pd.read_csv("routes.txt", dtype=str, low_memory=False)
+    trips = pd.read_csv("trips.txt", dtype=str, low_memory=False)
+    stops = pd.read_csv("stops.txt", dtype=str, low_memory=False)
 except FileNotFoundError as e:
     st.error(f"File mancante: {e.filename}")
 else:
@@ -291,8 +291,8 @@ st.dataframe(data_settimanale.sort_values(by=['route_id', 'day_of_week']))
 st.subheader("Output del modello prescrittivo: ottimizzazione delle corse (fasce orarie multiple)")
 
 # Percorsi fissi dei due file
-file1 = "dataset/ottimizzazione_20250325_112654.csv"
-file2 = "dataset/ottimizzazione_20250325_113839.csv"
+file1 = "ottimizzazione_20250325_112654.csv"
+file2 = "ottimizzazione_20250325_113839.csv"
 
 #Caricamento dati
 try:
