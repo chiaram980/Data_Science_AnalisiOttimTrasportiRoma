@@ -168,7 +168,7 @@ st.download_button(
 st.subheader("Visualizza fermate di una linea specifica")
 
 
-gtfs_path = r"C:\Users\C.Marino\Desktop\dataset"
+gtfs_path = "dataset"
 
 #Carica dati principali
 try:
@@ -291,8 +291,8 @@ st.dataframe(data_settimanale.sort_values(by=['route_id', 'day_of_week']))
 st.subheader("Output del modello prescrittivo: ottimizzazione delle corse (fasce orarie multiple)")
 
 # Percorsi fissi dei due file
-file1 = r"C:/Users/C.Marino/Desktop/dataset/ottimizzazione_20250325_112654.csv"
-file2 = r"C:/Users/C.Marino/Desktop/dataset/ottimizzazione_20250325_113839.csv"
+file1 = "dataset/ottimizzazione_20250325_112654.csv"
+file2 = "dataset/ottimizzazione_20250325_113839.csv"
 
 #Caricamento dati
 try:
