@@ -2,5 +2,6 @@ plotly
 streamlit
 folium
 pandas
-streamlit_folium
-matplotlib.pyplot
+numpy
+scikit-learn
+pulp
