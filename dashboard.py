@@ -240,7 +240,7 @@ else:
 
 # Dashboard Ritardi per Giorno della Settimana
 
-st.subheader("📆 Analisi dei ritardi per giorno della settimana")
+st.subheader("Analisi dei ritardi per giorno della settimana")
 
 
 data_fascia['day_of_week'] = [
