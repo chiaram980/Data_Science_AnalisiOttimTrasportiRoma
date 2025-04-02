@@ -209,18 +209,22 @@ else:
     stop_ids_set = set()
     
 
-# Scarica il file da Google Drive
-url = "https://drive.google.com/file/d/1VP9h8S5hE15vog2DlLjJuoRIxf4uJhJW/view?usp=drive_link"
+
+# Scarica il file stop_times da Google Drive
+url = "https://drive.google.com/uc?id=1VP9h8S5hE15vog2DlLjJuoRIxf4uJhJW"
 output = "stop_times_temp.txt"
-gdown.download(url, output, quiet=False)
 
-# Legge a blocchi dal file scaricato
-for chunk in pd.read_csv(output, dtype=str, chunksize=100000, low_memory=False):
-    stop_ids_set.update(chunk[chunk["trip_id"].isin(trip_ids)]["stop_id"].unique())
+try:
+    gdown.download(url, output, quiet=False)
 
-    except FileNotFoundError:
-        st.warning("File stop_times.txt non trovato.")
-        stop_ids_set = set()
+    # Legge il file scaricato a blocchi
+    for chunk in pd.read_csv(output, dtype=str, chunksize=100000, low_memory=False):
+        stop_ids_set.update(chunk[chunk["trip_id"].isin(trip_ids)]["stop_id"].unique())
+
+except FileNotFoundError:
+    st.warning("File stop_times.txt non trovato.")
+    stop_ids_set = set()
+
 
     if stop_ids_set:
         #Filtra fermate
