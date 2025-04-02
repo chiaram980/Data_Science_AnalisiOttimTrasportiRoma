@@ -198,33 +198,27 @@ else:
 
     stop_ids_set = set()
     
-
 import requests
 import io
 
-# 🔁 Inserisci l’ID del file pubblico su Drive
+# ID del file pubblico su Google Drive
 file_id = "1VP9h8S5hE15vog2DlLjJuoRIxf4uJhJW"
 download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
 
-# Scarica il file da Google Drive
-response = requests.get(download_url)
-if response.status_code == 200:
-    stop_times_file = io.StringIO(response.content.decode('utf-8'))
+stop_ids_set = set()
 
-    # Legge a blocchi come richiesto
-    for chunk in pd.read_csv(stop_times_file, dtype=str, chunksize=100000, low_memory=False):
-        stop_ids_set.update(chunk[chunk["trip_id"].isin(trip_ids)]["stop_id"].unique())
-else:
-    st.warning("⚠️ Impossibile scaricare il file stop_times.txt da Google Drive.")
+try:
+    response = requests.get(download_url)
+    if response.status_code == 200:
+        stop_times_file = io.StringIO(response.content.decode('utf-8'))
+        for chunk in pd.read_csv(stop_times_file, dtype=str, chunksize=100000, low_memory=False):
+            stop_ids_set.update(chunk[chunk["trip_id"].isin(trip_ids)]["stop_id"].unique())
+    else:
+        st.warning("⚠️ Impossibile scaricare il file stop_times.txt da Google Drive.")
+except Exception as e:
+    st.warning(f"⚠️ Errore durante il download o la lettura del file: {e}")
     stop_ids_set = set()
-    
-    # Legge il file scaricato a blocchi
-    for chunk in pd.read_csv(output, dtype=str, chunksize=100000, low_memory=False):
-        stop_ids_set.update(chunk[chunk["trip_id"].isin(trip_ids)]["stop_id"].unique())
 
-except FileNotFoundError:
-    st.warning("File stop_times.txt non trovato.")
-    stop_ids_set = set()
 
 
     if stop_ids_set:
