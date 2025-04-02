@@ -10,16 +10,6 @@ import seaborn as sns
 import os
 import gdown
 
-# Scaricamento automatico del file stop_times da Google Drive se non presente
-stop_times_path = "stop_times.txt"
-drive_file_id = "1VP9h8S5hE15vog2DlLjJuoRIxf4uJhJW"
-
-def scarica_stop_times():
-    if not os.path.exists(stop_times_path):
-        url = f"https://drive.google.com/uc?id={drive_file_id}"
-        gdown.download(url, stop_times_path, quiet=False)
-
-scarica_stop_times()
 
 
 #Caricamento dei dati
