@@ -195,7 +195,8 @@ else:
 
 
     stop_ids_set = set()
-    stop_times_path = os.path.join(gtfs_path, "stop_times.txt")
+    stop_times_path = r"https://drive.google.com/file/d/1VP9h8S5hE15vog2DlLjJuoRIxf4uJhJW/view?usp=drive_link"
+    stop_times= pd.read_csv (stop_times_path, dtype=str, low_memory=False)
 
     try:
         for chunk in pd.read_csv(stop_times_path, dtype=str, chunksize=100000, low_memory=False):
