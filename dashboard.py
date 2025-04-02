@@ -8,6 +8,18 @@ import zipfile
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
+import gdown
+
+# Scaricamento automatico del file stop_times da Google Drive se non presente
+stop_times_path = "stop_times.txt"
+drive_file_id = "1VP9h8S5hE15vog2DlLjJuoRIxf4uJhJW"
+
+def scarica_stop_times():
+    if not os.path.exists(stop_times_path):
+        url = f"https://drive.google.com/uc?id={drive_file_id}"
+        gdown.download(url, stop_times_path, quiet=False)
+
+scarica_stop_times()
 
 
 #Caricamento dei dati
@@ -195,12 +207,17 @@ else:
 
 
     stop_ids_set = set()
-    stop_times_path = r"https://drive.google.com/file/d/1VP9h8S5hE15vog2DlLjJuoRIxf4uJhJW/view?usp=drive_link"
-    stop_times= pd.read_csv (stop_times_path, dtype=str, low_memory=False)
+    
 
-    try:
-        for chunk in pd.read_csv(stop_times_path, dtype=str, chunksize=100000, low_memory=False):
-            stop_ids_set.update(chunk[chunk["trip_id"].isin(trip_ids)]["stop_id"].unique())
+# Scarica il file da Google Drive
+url = "https://drive.google.com/file/d/1VP9h8S5hE15vog2DlLjJuoRIxf4uJhJW/view?usp=drive_link"
+output = "stop_times_temp.txt"
+gdown.download(url, output, quiet=False)
+
+# Legge a blocchi dal file scaricato
+for chunk in pd.read_csv(output, dtype=str, chunksize=100000, low_memory=False):
+    stop_ids_set.update(chunk[chunk["trip_id"].isin(trip_ids)]["stop_id"].unique())
+
     except FileNotFoundError:
         st.warning("File stop_times.txt non trovato.")
         stop_ids_set = set()
@@ -362,13 +379,13 @@ st.subheader("Mappa delle fermate associate alle corse selezionate")
 try:
      
     if 'routes' not in locals():
-        routes = pd.read_csv(os.path.join(gtfs_path, "routes.txt"), dtype=str, low_memory=False)
+        routes = pd.read_csv( "routes.txt", dtype=str, low_memory=False)
     if 'trips' not in locals():
-        trips = pd.read_csv(os.path.join(gtfs_path, "trips.txt"), dtype=str, low_memory=False)
+        trips = pd.read_csv("trips.txt", dtype=str, low_memory=False)
     if 'stop_times' not in locals():
-        stop_times = pd.read_csv(os.path.join(gtfs_path, "stop_times.txt"), dtype=str, low_memory=False)
+        stop_times = pd.read_csv(r"https://drive.google.com/file/d/1VP9h8S5hE15vog2DlLjJuoRIxf4uJhJW/view?usp=drive_link", dtype=str, low_memory=False)
     if 'stops' not in locals():
-        stops = pd.read_csv(os.path.join(gtfs_path, "stops.txt"), dtype=str, low_memory=False)
+        stops = pd.read_csv("stops.txt", dtype=str, low_memory=False)
 
     #Filtro settimana/ora già applicato su data_settimanale
     corse_filtrate = data_settimanale[['route_id', 'hour']].drop_duplicates().copy()
