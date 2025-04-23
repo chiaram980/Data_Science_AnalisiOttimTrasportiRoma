@@ -228,7 +228,7 @@ except Exception as e:
 
 # Supponiamo che `stop_ids_set` sia stato definito in precedenza con stop_id delle corse
 # Ad esempio:
-# stop_ids_set = set(stop_times[stop_times['trip_id'].isin(trip_ids)]['stop_id'].unique())
+stop_ids_set = set(stop_times[stop_times['trip_id'].isin(trip_ids)]['stop_id'].unique())
 
 if stop_ids_set:
     # Filtra fermate
@@ -393,8 +393,7 @@ try:
         routes = pd.read_csv( "routes.txt", dtype=str, low_memory=False)
     if 'trips' not in locals():
         trips = pd.read_csv("trips.txt", dtype=str, low_memory=False)
-    if 'stop_times' not in locals():
-        stop_times = pd.read_csv(r"https://drive.google.com/file/d/1VP9h8S5hE15vog2DlLjJuoRIxf4uJhJW/view?usp=drive_link", dtype=str, low_memory=False)
+   
     if 'stops' not in locals():
         stops = pd.read_csv("stops.txt", dtype=str, low_memory=False)
 
