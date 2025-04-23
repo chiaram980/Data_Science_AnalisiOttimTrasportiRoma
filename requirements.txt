@@ -8,3 +8,4 @@ pulp
 matplotlib
 seaborn
 gdown
+streamlit-folium
