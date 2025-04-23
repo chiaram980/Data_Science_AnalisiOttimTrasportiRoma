@@ -198,24 +198,11 @@ else:
 
     stop_ids_set = set()
     
-import requests
-import io
 
+####
 
-
-# File ID e URL di download diretto
-file_id = "1DyC1A8jO6WYu3CmN-mH_JXRNX188ofY3"
-url = f"https://drive.google.com/uc?id={file_id}"
-
-# Percorso locale per salvarlo temporaneamente
-output_path = "stop_times.txt"
-
-# Scarica solo se non esiste già localmente
-if not os.path.exists(output_path):
-    gdown.download(url, output_path, quiet=False)
-
-# Leggi il file .txt (formato GTFS separato da virgole)
-stop_times = pd.read_csv(output_path, sep=",", dtype=str, low_memory=False)
+# Leggi stop_times.txt dal percorso locale
+stop_times = pd.read_csv(r"C:\Users\C.Marino\Desktop\doc\dataset\stop_times.txt", sep=",", dtype=str, low_memory=False)
 
 # Supponiamo che `stop_ids_set` sia stato definito in precedenza con stop_id delle corse
 # Ad esempio:
