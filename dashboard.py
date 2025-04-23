@@ -320,8 +320,8 @@ st.dataframe(data_settimanale.sort_values(by=['route_id', 'day_of_week']))
 st.subheader("Output del modello prescrittivo: ottimizzazione delle corse (fasce orarie multiple)")
 
 # Percorsi fissi dei due file
-file1 = "ottimizzazione_20250325_112654.csv"
-file2 = "ottimizzazione_20250325_113839.csv"
+file1 = "ottimizzazione_dashboard_20250325_112654.csv"
+file2 = "ottimizzazione_dashboard_20250325_113839.csv"
 
 #Caricamento dati
 try:
