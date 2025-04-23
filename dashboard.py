@@ -206,16 +206,18 @@ download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
 
 try:
     response = requests.get(download_url)
-    response.raise_for_status()  # solleva errore se il download fallisce
+    response.raise_for_status()
 
-    # Converto i byte in un oggetto StringIO leggibile da pandas
+    # Controllo: primi caratteri per vedere se è un CSV o un errore HTML
+    st.text(response.text[:500])  # Visualizza in Streamlit i primi 500 caratteri
+
     stop_times_file = io.StringIO(response.content.decode('utf-8'))
-
-    # Ora puoi leggere direttamente il file CSV da lì
     stop_times = pd.read_csv(stop_times_file, sep=",", dtype=str, low_memory=False)
 
+    st.write("✅ File letto correttamente. Colonne:", stop_times.columns.tolist())
+
 except Exception as e:
-    st.error(f"⚠️ Errore nel download o nella lettura del file stop_times.txt: {e}")
+    st.error(f"❌ Errore: {e}")
 
 
 
