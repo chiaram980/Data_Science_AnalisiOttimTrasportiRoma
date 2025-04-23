@@ -203,7 +203,7 @@ import io
 
 
 #ID del file
-file_id = "1VP9h8S5hE15vog2DlLjJuoRIxf4uJhJW"
+file_id = "1DyC1A8jO6WYu3CmN-mH_JXRNX188ofY3"
 url = f"https://drive.google.com/uc?id={file_id}"
 
 #Percorso locale dove salvare temporaneamente il file
