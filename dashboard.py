@@ -201,23 +201,19 @@ else:
 import requests
 import io
 
+
+#ID del file
 file_id = "1VP9h8S5hE15vog2DlLjJuoRIxf4uJhJW"
-download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+url = f"https://drive.google.com/uc?id={file_id}"
 
-try:
-    response = requests.get(download_url)
-    response.raise_for_status()
+#Percorso locale dove salvare temporaneamente il file
+output_path = "stop_times.txt"
 
-    # Controllo: primi caratteri per vedere se è un CSV o un errore HTML
-    st.text(response.text[:500])  # Visualizza in Streamlit i primi 500 caratteri
+#Scarica il file da Google Drive
+gdown.download(url, output_path, quiet=False)
 
-    stop_times_file = io.StringIO(response.content.decode('utf-8'))
-    stop_times = pd.read_csv(stop_times_file, sep=",", dtype=str, low_memory=False)
-
-    st.write("✅ File letto correttamente. Colonne:", stop_times.columns.tolist())
-
-except Exception as e:
-    st.error(f"❌ Errore: {e}")
+#Leggi il file
+stop_times = pd.read_csv(output_path, sep=",", dtype=str, low_memory=False)
 
 
 
