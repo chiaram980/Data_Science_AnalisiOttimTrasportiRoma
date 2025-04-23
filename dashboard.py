@@ -201,23 +201,21 @@ else:
 import requests
 import io
 
-# ID del file pubblico su Google Drive
 file_id = "1VP9h8S5hE15vog2DlLjJuoRIxf4uJhJW"
 download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
 
-stop_ids_set = set()
-
 try:
     response = requests.get(download_url)
-    if response.status_code == 200:
-        stop_times_file = io.StringIO(response.content.decode('utf-8'))
-        for chunk in pd.read_csv(stop_times_file, sep=",", dtype=str, chunksize=100000, low_memory=False):
-            stop_ids_set.update(chunk[chunk["trip_id"].isin(trip_ids)]["stop_id"].unique())
-    else:
-        st.warning("⚠️ Impossibile scaricare il file stop_times.txt da Google Drive.")
+    response.raise_for_status()  # solleva errore se il download fallisce
+
+    # Converto i byte in un oggetto StringIO leggibile da pandas
+    stop_times_file = io.StringIO(response.content.decode('utf-8'))
+
+    # Ora puoi leggere direttamente il file CSV da lì
+    stop_times = pd.read_csv(stop_times_file, sep=",", dtype=str, low_memory=False)
+
 except Exception as e:
-    st.warning(f"⚠️ Errore durante il download o la lettura del file: {e}")
-    stop_ids_set = set()
+    st.error(f"⚠️ Errore nel download o nella lettura del file stop_times.txt: {e}")
 
 
 
