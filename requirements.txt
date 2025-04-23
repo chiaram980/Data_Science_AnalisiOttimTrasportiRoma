@@ -9,3 +9,5 @@ matplotlib
 seaborn
 gdown
 streamlit-folium
+requests
+pyarrow
