@@ -202,54 +202,57 @@ import requests
 import io
 
 
-#ID del file
+
+# File ID e URL di download diretto
 file_id = "1DyC1A8jO6WYu3CmN-mH_JXRNX188ofY3"
 url = f"https://drive.google.com/uc?id={file_id}"
 
-#Percorso locale dove salvare temporaneamente il file
+# Percorso locale per salvarlo temporaneamente
 output_path = "stop_times.txt"
 
-#Scarica il file da Google Drive
-gdown.download(url, output_path, quiet=False)
+# Scarica solo se non esiste già localmente
+if not os.path.exists(output_path):
+    gdown.download(url, output_path, quiet=False)
 
-#Leggi il file
+# Leggi il file .txt (formato GTFS separato da virgole)
 stop_times = pd.read_csv(output_path, sep=",", dtype=str, low_memory=False)
 
+# Supponiamo che `stop_ids_set` sia stato definito in precedenza con stop_id delle corse
+# Ad esempio:
+# stop_ids_set = set(stop_times[stop_times['trip_id'].isin(trip_ids)]['stop_id'].unique())
 
+if stop_ids_set:
+    # Filtra fermate
+    fermate_linea = stops[stops["stop_id"].isin(stop_ids_set)].drop_duplicates(subset="stop_id")
+    fermate_linea["stop_lat"] = fermate_linea["stop_lat"].astype(float)
+    fermate_linea["stop_lon"] = fermate_linea["stop_lon"].astype(float)
 
-    if stop_ids_set:
-        #Filtra fermate
-        fermate_linea = stops[stops["stop_id"].isin(stop_ids_set)].drop_duplicates(subset="stop_id")
-        fermate_linea["stop_lat"] = fermate_linea["stop_lat"].astype(float)
-        fermate_linea["stop_lon"] = fermate_linea["stop_lon"].astype(float)
+    st.markdown(f"**Numero di fermate trovate:** {len(fermate_linea)}")
 
-        st.markdown(f"**Numero di fermate trovate:** {len(fermate_linea)}")
+    # Tabella fermate
+    st.dataframe(fermate_linea[["stop_name", "stop_lat", "stop_lon"]].sort_values(by="stop_name"))
 
-        #Tabella fermate
-        st.dataframe(fermate_linea[["stop_name", "stop_lat", "stop_lon"]].sort_values(by="stop_name"))
+    # Mappa con fermate
+    m = folium.Map(
+        location=[fermate_linea["stop_lat"].mean(), fermate_linea["stop_lon"].mean()],
+        zoom_start=13
+    )
 
-        #Mappa con fermate
-        m = folium.Map(
-            location=[fermate_linea["stop_lat"].mean(), fermate_linea["stop_lon"].mean()],
-            zoom_start=13
-        )
+    for _, stop in fermate_linea.iterrows():
+        folium.CircleMarker(
+            location=(stop['stop_lat'], stop['stop_lon']),
+            radius=4,
+            color='blue',
+            fill=True,
+            fill_color='blue',
+            fill_opacity=0.7,
+            tooltip=stop['stop_name']
+        ).add_to(m)
 
-        for _, stop in fermate_linea.iterrows():
-            folium.CircleMarker(
-                location=(stop['stop_lat'], stop['stop_lon']),
-                radius=4,
-                color='blue',
-                fill=True,
-                fill_color='blue',
-                fill_opacity=0.7,
-                tooltip=stop['stop_name']
-            ).add_to(m)
-
-        st_folium(m, width=700, height=500)
-        st.markdown("**Mappa delle fermate della linea selezionata.**")
-    else:
-        st.warning("Nessuna fermata trovata per questa linea.")
-
+    st_folium(m, width=700, height=500)
+    st.markdown("**Mappa delle fermate della linea selezionata.**")
+else:
+    st.warning("Nessuna fermata trovata per questa linea.")
 
 # Dashboard Ritardi per Giorno della Settimana
 
