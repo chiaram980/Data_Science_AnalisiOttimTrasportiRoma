@@ -253,6 +253,10 @@ if stop_ids_set:
 else:
     st.warning("Nessuna fermata trovata per questa linea.")
 
+
+
+
+
 # Dashboard Ritardi per Giorno della Settimana
 
 st.subheader("Analisi dei ritardi per giorno della settimana")
