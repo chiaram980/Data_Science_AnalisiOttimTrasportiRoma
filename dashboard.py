@@ -211,7 +211,7 @@ try:
     response = requests.get(download_url)
     if response.status_code == 200:
         stop_times_file = io.StringIO(response.content.decode('utf-8'))
-        for chunk in pd.read_csv(stop_times_file, dtype=str, chunksize=100000, low_memory=False):
+        for chunk in pd.read_csv(stop_times_file, sep=",", dtype=str, chunksize=100000, low_memory=False):
             stop_ids_set.update(chunk[chunk["trip_id"].isin(trip_ids)]["stop_id"].unique())
     else:
         st.warning("⚠️ Impossibile scaricare il file stop_times.txt da Google Drive.")
