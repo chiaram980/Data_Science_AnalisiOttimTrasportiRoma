@@ -201,19 +201,29 @@ else:
 
 ####
 
-# Percorso locale assoluto al file stop_times.txt
-stop_times_path = r"C:\Users\C.Marino\Desktop\doc\dataset\stop_times.txt"
+import streamlit as st
+import pandas as pd
+import requests
+import io
 
-# Tentativo di caricamento del file
+# === Link diretto Google Drive ===
+file_id = "1Qx7jVKObRN79CLJwIy9Jzh0VwJ2D9dWZ"
+download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+
+st.markdown("### Caricamento del file stop_times.parquet da Google Drive...")
+
 try:
-    stop_times = pd.read_csv(stop_times_path, sep=",", dtype=str, low_memory=False)
-    st.success("✅ File stop_times.txt caricato correttamente.")
-except FileNotFoundError:
-    st.error("❌ Il file stop_times.txt non è stato trovato nel percorso specificato.")
-except pd.errors.ParserError as e:
-    st.error(f"⚠️ Errore nel parsing del file stop_times.txt: {e}")
+    with requests.get(download_url, stream=True) as response:
+        response.raise_for_status()
+        file_stream = io.BytesIO(response.content)
+
+        # Caricamento del Parquet
+        stop_times = pd.read_parquet(file_stream)
+        st.success("✅ File Parquet caricato correttamente da Google Drive.")
+except requests.exceptions.RequestException as e:
+    st.error(f"❌ Errore durante il download da Google Drive: {e}")
 except Exception as e:
-    st.error(f"⚠️ Errore durante la lettura del file stop_times.txt: {e}")
+    st.error(f"⚠️ Errore durante la lettura del file Parquet: {e}")
 
 
 # Supponiamo che `stop_ids_set` sia stato definito in precedenza con stop_id delle corse
