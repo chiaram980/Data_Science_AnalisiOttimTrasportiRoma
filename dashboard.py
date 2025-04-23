@@ -210,7 +210,7 @@ import io
 file_id = "1Qx7jVKObRN79CLJwIy9Jzh0VwJ2D9dWZ"
 download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
 
-st.markdown("### Caricamento del file stop_times.parquet da Google Drive...")
+st.markdown("### Caricamento del file stop_times da Google Drive...")
 
 try:
     with requests.get(download_url, stream=True) as response:
@@ -219,11 +219,11 @@ try:
 
         # Caricamento del Parquet
         stop_times = pd.read_parquet(file_stream)
-        st.success("✅ File Parquet caricato correttamente da Google Drive.")
+        st.success("File caricato correttamente da Google Drive.")
 except requests.exceptions.RequestException as e:
-    st.error(f"❌ Errore durante il download da Google Drive: {e}")
+    st.error(f"Errore durante il download da Google Drive: {e}")
 except Exception as e:
-    st.error(f"⚠️ Errore durante la lettura del file Parquet: {e}")
+    st.error(f"Errore durante la lettura del file Parquet: {e}")
 
 
 # Supponiamo che `stop_ids_set` sia stato definito in precedenza con stop_id delle corse
