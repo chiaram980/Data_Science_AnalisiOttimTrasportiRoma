@@ -201,8 +201,20 @@ else:
 
 ####
 
-# Leggi stop_times.txt dal percorso locale
-stop_times = pd.read_csv(r"C:\Users\C.Marino\Desktop\doc\dataset\stop_times.txt", sep=",", dtype=str, low_memory=False)
+# Percorso locale assoluto al file stop_times.txt
+stop_times_path = r"C:\Users\C.Marino\Desktop\doc\dataset\stop_times.txt"
+
+# Tentativo di caricamento del file
+try:
+    stop_times = pd.read_csv(stop_times_path, sep=",", dtype=str, low_memory=False)
+    st.success("✅ File stop_times.txt caricato correttamente.")
+except FileNotFoundError:
+    st.error("❌ Il file stop_times.txt non è stato trovato nel percorso specificato.")
+except pd.errors.ParserError as e:
+    st.error(f"⚠️ Errore nel parsing del file stop_times.txt: {e}")
+except Exception as e:
+    st.error(f"⚠️ Errore durante la lettura del file stop_times.txt: {e}")
+
 
 # Supponiamo che `stop_ids_set` sia stato definito in precedenza con stop_id delle corse
 # Ad esempio:
