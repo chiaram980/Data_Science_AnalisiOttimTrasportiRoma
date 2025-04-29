@@ -153,5 +153,72 @@ except Exception as e:
     st.error(f"Errore nella costruzione della mappa: {e}")
 
 
+# =================== Mappa fermate delle corse selezionate (ottimizzate) ===================
+
+st.subheader("Mappa delle fermate associate alle corse ottimizzate")
+
+if 'df_ottimizzato' in locals():
+    try:
+        if 'routes' not in locals():
+            routes = pd.read_csv("routes.txt", dtype=str, low_memory=False)
+        if 'trips' not in locals():
+            trips = pd.read_csv("trips.txt", dtype=str, low_memory=False)
+        if 'stops' not in locals():
+            stops = pd.read_csv("stops.txt", dtype=str, low_memory=False)
+
+        # Normalizzazione ID linea
+        corse_ottimizzate = df_ottimizzato[['route_id', 'hour']].drop_duplicates().copy()
+        corse_ottimizzate['route_id_gtfs'] = corse_ottimizzate['route_id'].str.replace("Linea ", "").str.strip()
+
+        fermate_ottimizzate = pd.DataFrame()
+        palette_opt = px.colors.qualitative.Set3
+
+        for idx, row in corse_ottimizzate.iterrows():
+            trips_match = trips[trips['route_id'] == row['route_id_gtfs']]
+            if not trips_match.empty:
+                trip_id = trips_match['trip_id'].iloc[0]
+                stops_trip = stop_times[stop_times['trip_id'] == trip_id]
+                stop_ids = stops_trip['stop_id'].unique()
+                fermate_linea = stops[stops['stop_id'].isin(stop_ids)].copy()
+                fermate_linea['route_id'] = row['route_id']
+                colore = palette_opt[idx % len(palette_opt)]
+                fermate_linea['color'] = colore
+                fermate_ottimizzate = pd.concat([fermate_ottimizzate, fermate_linea], ignore_index=True)
+
+        if fermate_ottimizzate.empty:
+            st.warning("Nessuna fermata trovata per le corse ottimizzate selezionate.")
+        else:
+            fermate_ottimizzate['stop_lat'] = fermate_ottimizzate['stop_lat'].astype(float)
+            fermate_ottimizzate['stop_lon'] = fermate_ottimizzate['stop_lon'].astype(float)
+
+            m_opt = folium.Map(
+                location=[fermate_ottimizzate['stop_lat'].mean(), fermate_ottimizzate['stop_lon'].mean()],
+                zoom_start=12
+            )
+
+            for _, row in fermate_ottimizzate.iterrows():
+                folium.CircleMarker(
+                    location=(row['stop_lat'], row['stop_lon']),
+                    radius=5,
+                    color=row['color'],
+                    fill=True,
+                    fill_color=row['color'],
+                    fill_opacity=0.8,
+                    tooltip=row['stop_name']
+                ).add_to(m_opt)
+
+            st_folium(m_opt, width=700, height=500)
+            st.markdown("**Figura:** Mappa interattiva delle fermate associate alle corse ottimizzate.")
+
+            # Tabella fermate ottimizzate
+            st.subheader("Fermate coinvolte nelle corse ottimizzate")
+            st.dataframe(fermate_ottimizzate[['route_id', 'stop_name', 'stop_lat', 'stop_lon']].drop_duplicates().sort_values(by='route_id'))
+
+    except FileNotFoundError as e:
+        st.error(f"File mancante: {e.filename}")
+else:
+    st.warning("Dati delle corse ottimizzate non caricati. Impossibile creare la mappa.")
+
+
 
 
