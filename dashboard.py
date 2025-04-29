@@ -8,6 +8,7 @@ import seaborn as sns
 import requests
 import os
 import gdown
+import io
 
 # ======================== Caricamento dati iniziali ========================
 
