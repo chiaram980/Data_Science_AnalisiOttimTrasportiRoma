@@ -114,14 +114,6 @@ try:
     routes = routes[(routes['agency_id'] == 'OP1') & (routes['route_type'] == '3')]
     route_ids = sorted(routes['route_id'].unique())
 
-    route_id_selezionato = st.selectbox("Seleziona una linea (route_id):", route_ids)
-
-    nome_linea = routes[routes["route_id"] == route_id_selezionato]["route_long_name"].iloc[0]
-    st.markdown(f"**Linea selezionata:** `{route_id_selezionato}`")
-
-    trips_linea = trips[trips["route_id"] == route_id_selezionato]
-    trip_ids = trips_linea["trip_id"].unique()
-
     # Caricamento stop_times dal file parquet su Google Drive
     file_id = "1Qx7jVKObRN79CLJwIy9Jzh0VwJ2D9dWZ"
     download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
