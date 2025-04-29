@@ -153,6 +153,77 @@ except Exception as e:
     st.error(f"Errore nella costruzione della mappa: {e}")
 
 
+# =================== Output del modello prescrittivo: ottimizzazione delle corse ===================
+
+st.subheader("Output del modello prescrittivo: ottimizzazione delle corse (fasce orarie multiple)")
+
+# Percorsi fissi dei due file
+file1 = "ottimizzazione_dashboard_20250325_112654.csv"
+file2 = "ottimizzazione_dashboard_20250325_113839.csv"
+
+# Caricamento dati
+try:
+    df1 = pd.read_csv(file1)
+    df2 = pd.read_csv(file2)
+
+    # Aggiunta colonna 'fascia_oraria' per distinguere
+    df1['fascia_oraria'] = "12-15"
+    df2['fascia_oraria'] = "08-11"
+
+    df_opt_all = pd.concat([df1, df2], ignore_index=True)
+    df_opt_all['hour'] = df_opt_all['hour'].astype(str)
+
+    # Sidebar - Filtri ottimizzazione
+    st.sidebar.header("Filtri corse ottimizzate")
+
+    selected_fasce = st.sidebar.multiselect(
+        "Seleziona la fascia oraria:",
+        df_opt_all['fascia_oraria'].unique(),
+        default=df_opt_all['fascia_oraria'].unique(),
+        key="fasce_ottimizzazione"
+    )
+
+    selected_routes_opt = st.sidebar.multiselect(
+        "Seleziona le linee:",
+        sorted(df_opt_all['route_id'].unique()),
+        default=sorted(df_opt_all['route_id'].unique()),
+        key="linee_ottimizzazione"
+    )
+
+    # Applicazione filtri
+    df_ottimizzato = df_opt_all[
+        (df_opt_all['fascia_oraria'].isin(selected_fasce)) &
+        (df_opt_all['route_id'].isin(selected_routes_opt))
+    ]
+
+    # Barplot corse extra
+    st.subheader("Corse extra suggerite per linea e fascia oraria")
+    fig_ott = px.bar(
+        df_ottimizzato,
+        x="route_id",
+        y="extra_trips",
+        color="fascia_oraria",
+        barmode="group",
+        labels={"extra_trips": "Corse extra", "route_id": "Linea"},
+        title="Distribuzione delle corse extra suggerite dal modello"
+    )
+    st.plotly_chart(fig_ott, use_container_width=True)
+
+    # Tabella dati ottimizzati
+    st.subheader("Tabella corse ottimizzate")
+    st.dataframe(df_ottimizzato.sort_values(by="extra_trips", ascending=False))
+
+    # Metriche
+    st.metric("Totale corse extra", int(df_ottimizzato['extra_trips'].sum()))
+    st.metric("Riduzione stimata complessiva (minuti)", f"{df_ottimizzato['estimated_impact'].sum():.2f}")
+
+except FileNotFoundError as e:
+    st.error(f"File non trovato: {e.filename}")
+
+
+
+
+
 # =================== Mappa fermate delle corse selezionate (ottimizzate) ===================
 
 st.subheader("Mappa delle fermate associate alle corse ottimizzate")
