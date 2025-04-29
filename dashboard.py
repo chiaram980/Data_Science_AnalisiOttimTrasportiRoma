@@ -201,6 +201,52 @@ else:
 
 
 
+# Dashboard Ritardi per Giorno della Settimana
+
+st.subheader("Analisi dei ritardi per giorno della settimana")
+
+
+data_fascia['day_of_week'] = [
+    'Lunedì', 'Lunedì', 'Martedì', 'Mercoledì', 'Martedì', 'Giovedì', 'Venerdì', 'Venerdì',
+    'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Lunedì', 'Martedì', 'Mercoledì',
+    'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Giovedì', 'Venerdì', 'Venerdì'
+]
+
+#Sidebar per filtri
+st.sidebar.header("Filtri settimanali")
+settimane_disp = sorted(data_fascia['week_range'].unique())
+giorni_disp = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì']
+linee_disp = sorted(data_fascia['route_id'].unique())
+
+#Aggiunta delle chiavi per evitare conflitti
+selected_week = st.sidebar.selectbox("Seleziona la settimana:", settimane_disp, key="selectbox_settimana")
+selected_days = st.sidebar.multiselect("Giorni della settimana:", giorni_disp, default=giorni_disp, key="multiselect_giorni")
+selected_routes = st.sidebar.multiselect("Linee:", linee_disp, default=linee_disp, key="multiselect_linee")
+
+#Filtro dati
+data_settimanale = data_fascia[
+    (data_fascia['week_range'] == selected_week) &
+    (data_fascia['day_of_week'].isin(selected_days)) &
+    (data_fascia['route_id'].isin(selected_routes))
+]
+
+#Line chart dei ritardi
+fig_sett = px.line(
+    data_settimanale,
+    x='day_of_week',
+    y='delay',
+    color='route_id',
+    markers=True,
+    labels={'day_of_week': 'Giorno della settimana', 'delay': 'Ritardo medio (min)', 'route_id': 'Linea'},
+    title=f"Andamento dei ritardi nella settimana {selected_week}"
+)
+st.plotly_chart(fig_sett, use_container_width=True)
+
+#Tabella riassuntiva
+st.subheader("Dati ritardi settimanali filtrati")
+st.dataframe(data_settimanale.sort_values(by=['route_id', 'day_of_week']))
+
+
 
 
 #Visualizzazione dei due file output del modello prescrittivo
