@@ -128,29 +128,8 @@ try:
     response = requests.get(download_url, stream=True)
     response.raise_for_status()
     stop_times = pd.read_parquet(io.BytesIO(response.content))
-
-    #stop_ids_set = set(stop_times[stop_times['trip_id'].isin(trip_ids)]['stop_id'].unique())
-
-    #if stop_ids_set:
-     #   fermate_linea = stops[stops["stop_id"].isin(stop_ids_set)].drop_duplicates(subset="stop_id")
-      #  fermate_linea["stop_lat"] = fermate_linea["stop_lat"].astype(float)
-       # fermate_linea["stop_lon"] = fermate_linea["stop_lon"].astype(float)
-
-        #st.markdown(f"**Numero di fermate trovate:** {len(fermate_linea)}")
-        #st.dataframe(fermate_linea[["stop_name", "stop_lat", "stop_lon"]].sort_values(by="stop_name"))
-
-        #m = folium.Map(location=[fermate_linea["stop_lat"].mean(), fermate_linea["stop_lon"].mean()], zoom_start=13)
-        #for _, stop in fermate_linea.iterrows():
-         #   folium.CircleMarker(location=(stop['stop_lat'], stop['stop_lon']), radius=4, color='blue', fill=True, fill_opacity=0.7, tooltip=stop['stop_name']).add_to(m)
-
-        #st_folium(m, width=700, height=500)
-    #else:
-     #   st.warning("Nessuna fermata trovata.")
-
-#except FileNotFoundError as e:
- #   st.error(f"File mancante: {e.filename}")
-#except Exception as e:
- #   st.error(f"Errore nella costruzione della mappa: {e}")
+except Exception as e:
+    st.error(f"Errore nel caricamento dei file delle fermate: {e}")
 
 # =================== Output del modello prescrittivo: ottimizzazione delle corse ===================
 
