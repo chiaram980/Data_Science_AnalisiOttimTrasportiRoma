@@ -143,65 +143,78 @@ except Exception as e:
 except FileNotFoundError as e:
     st.error(f"File non trovato: {e.filename}")
 
-# ======================== Mappa fermate corse ottimizzate ========================
+# =================== Mappa fermate delle corse selezionate (ottimizzate) ===================
 
 st.subheader("Mappa delle fermate associate alle corse ottimizzate")
 
-try:
-    file_id_stops = "1aEotLtQ4E1UuKWRLKvgk1SX8R9bnHDPz"  # (id GDrive del file stops.txt)
-    url_stops = f"https://drive.google.com/uc?export=download&id={file_id_stops}"
-    response_stops = requests.get(url_stops)
-    stops = pd.read_csv(io.BytesIO(response_stops.content), dtype=str, low_memory=False)
+if 'df_ottimizzato' in locals():
+    try:
+        # carica routes, trips, stops se servono
+        if 'routes' not in locals():
+            routes = pd.read_csv("routes.txt", dtype=str, low_memory=False)
+        if 'trips' not in locals():
+            trips = pd.read_csv("trips.txt", dtype=str, low_memory=False)
+        if 'stops' not in locals():
+            stops = pd.read_csv("stops.txt", dtype=str, low_memory=False)
 
-    stop_times_file = "https://drive.google.com/uc?export=download&id=1Qx7jVKObRN79CLJwIy9Jzh0VwJ2D9dWZ"
-    stop_times = pd.read_parquet(io.BytesIO(requests.get(stop_times_file).content))
+        # carica stop_times da Cloud
+        file_id = "1Qx7jVKObRN79CLJwIy9Jzh0VwJ2D9dWZ"
+        download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+        response = requests.get(download_url, stream=True)
+        response.raise_for_status()
+        stop_times = pd.read_parquet(io.BytesIO(response.content))
 
-    trips = pd.read_csv("trips.txt", dtype=str, low_memory=False)
+        # normalizza route_id
+        corse_ottimizzate = df_ottimizzato[['route_id', 'hour']].drop_duplicates().copy()
+        corse_ottimizzate['route_id_gtfs'] = corse_ottimizzate['route_id'].str.replace("Linea ", "").str.strip()
 
-    corse_ottimizzate = df_ottimizzato[['route_id', 'hour']].drop_duplicates().copy()
-    corse_ottimizzate['route_id_gtfs'] = corse_ottimizzate['route_id'].str.replace("Linea ", "").str.strip()
+        fermate_ottimizzate = pd.DataFrame()
+        palette_opt = px.colors.qualitative.Set3
 
-    fermate_finali = pd.DataFrame()
-    palette_opt = px.colors.qualitative.Set3
+        for idx, row in corse_ottimizzate.iterrows():
+            trips_match = trips[trips['route_id'] == row['route_id_gtfs']]
+            if not trips_match.empty:
+                trip_id = trips_match['trip_id'].iloc[0]
+                stops_trip = stop_times[stop_times['trip_id'] == trip_id]
+                stop_ids = stops_trip['stop_id'].unique()
+                fermate_linea = stops[stops['stop_id'].isin(stop_ids)].copy()
+                fermate_linea['route_id'] = row['route_id']
+                colore = palette_opt[idx % len(palette_opt)]
+                fermate_linea['color'] = colore
+                fermate_ottimizzate = pd.concat([fermate_ottimizzate, fermate_linea], ignore_index=True)
 
-    for idx, row in corse_ottimizzate.iterrows():
-        trips_match = trips[trips['route_id'] == row['route_id_gtfs']]
-        if not trips_match.empty:
-            trip_id = trips_match['trip_id'].iloc[0]
-            stops_trip = stop_times[stop_times['trip_id'] == trip_id]
-            stop_ids = stops_trip['stop_id'].unique()
-            fermate_linea = stops[stops['stop_id'].isin(stop_ids)].copy()
-            fermate_linea['route_id'] = row['route_id']
-            fermate_linea['color'] = palette_opt[idx % len(palette_opt)]
-            fermate_finali = pd.concat([fermate_finali, fermate_linea], ignore_index=True)
+        if fermate_ottimizzate.empty:
+            st.warning("Nessuna fermata trovata per le corse ottimizzate selezionate.")
+        else:
+            fermate_ottimizzate['stop_lat'] = fermate_ottimizzate['stop_lat'].astype(float)
+            fermate_ottimizzate['stop_lon'] = fermate_ottimizzate['stop_lon'].astype(float)
 
-    if fermate_finali.empty:
-        st.warning("Nessuna fermata trovata per le corse ottimizzate.")
-    else:
-        fermate_finali['stop_lat'] = fermate_finali['stop_lat'].astype(float)
-        fermate_finali['stop_lon'] = fermate_finali['stop_lon'].astype(float)
+            m_opt = folium.Map(
+                location=[fermate_ottimizzate['stop_lat'].mean(), fermate_ottimizzate['stop_lon'].mean()],
+                zoom_start=12
+            )
 
-        m_finale = folium.Map(location=[fermate_finali['stop_lat'].mean(), fermate_finali['stop_lon'].mean()], zoom_start=12)
+            for _, row in fermate_ottimizzate.iterrows():
+                folium.CircleMarker(
+                    location=(row['stop_lat'], row['stop_lon']),
+                    radius=5,
+                    color=row['color'],
+                    fill=True,
+                    fill_color=row['color'],
+                    fill_opacity=0.8,
+                    tooltip=row['stop_name']
+                ).add_to(m_opt)
 
-        for _, row in fermate_finali.iterrows():
-            folium.CircleMarker(
-                location=(row['stop_lat'], row['stop_lon']),
-                radius=5,
-                color=row['color'],
-                fill=True,
-                fill_color=row['color'],
-                fill_opacity=0.8,
-                tooltip=row['stop_name']
-            ).add_to(m_finale)
+            st_folium(m_opt, width=700, height=500)
+            st.markdown("**Figura:** Mappa interattiva delle fermate associate alle corse ottimizzate.")
+            st.subheader("Fermate coinvolte nelle corse ottimizzate")
+            st.dataframe(fermate_ottimizzate[['route_id', 'stop_name', 'stop_lat', 'stop_lon']].drop_duplicates().sort_values(by='route_id'))
 
-        st_folium(m_finale, width=700, height=500)
-        st.markdown("**Figura:** Mappa delle fermate delle corse ottimizzate.")
+    except Exception as e:
+        st.error(f"Errore caricamento dati mappa: {e}")
 
-        st.subheader("Fermate coinvolte nelle corse ottimizzate")
-        st.dataframe(fermate_finali[['route_id', 'stop_name', 'stop_lat', 'stop_lon']].drop_duplicates().sort_values(by='route_id'))
-
-except Exception as e:
-    st.error(f"Errore caricamento dati mappa: {e}")
+else:
+    st.warning("Dati delle corse ottimizzate non caricati. Impossibile creare la mappa.")
 
 
 
