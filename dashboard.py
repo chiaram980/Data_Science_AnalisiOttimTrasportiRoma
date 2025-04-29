@@ -152,7 +152,6 @@ except FileNotFoundError as e:
 except Exception as e:
     st.error(f"Errore nella costruzione della mappa: {e}")
 
-
 # =================== Output del modello prescrittivo: ottimizzazione delle corse ===================
 
 st.subheader("Output del modello prescrittivo: ottimizzazione delle corse (fasce orarie multiple)")
@@ -220,12 +219,7 @@ try:
 except FileNotFoundError as e:
     st.error(f"File non trovato: {e.filename}")
 
-
-
-
-
 # =================== Mappa fermate delle corse selezionate (ottimizzate) ===================
-
 st.subheader("Mappa delle fermate associate alle corse ottimizzate")
 
 if 'df_ottimizzato' in locals():
