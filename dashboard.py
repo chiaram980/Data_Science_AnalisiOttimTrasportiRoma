@@ -118,11 +118,16 @@ try:
     # Aggiunta colonna 'fascia_oraria' per distinguere
     df1['fascia_oraria'] = "13-14"
     df2['fascia_oraria'] = "09-10"
-
     df_opt_all = pd.concat([df1, df2], ignore_index=True)
     df_opt_all['hour'] = df_opt_all['hour'].astype(str)
 
-st.sidebar.header("Filtri corse ottimizzate")
+except FileNotFoundError as e:
+    st.error(f"File non trovato: {e.filename}")
+
+except Exception as e:
+    st.error(f"Errore nel caricamento dati ottimizzazione: {e}")
+
+    st.sidebar.header("Filtri corse ottimizzate")
     selected_fasce = st.sidebar.multiselect("Seleziona la fascia oraria:", df_opt_all['fascia_oraria'].unique(), default=df_opt_all['fascia_oraria'].unique(), key="fasce_opt")
     selected_routes_opt = st.sidebar.multiselect("Seleziona le linee:", sorted(df_opt_all['route_id'].unique()), default=sorted(df_opt_all['route_id'].unique()), key="linee_opt")
 
