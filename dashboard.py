@@ -328,6 +328,7 @@ download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
 
 st.markdown("### Caricamento del file stop_times da Google Drive...")
 
+
 try:
     with requests.get(download_url, stream=True) as response:
         response.raise_for_status()
@@ -341,7 +342,15 @@ except requests.exceptions.RequestException as e:
 except Exception as e:
     st.error(f"Errore durante la lettura del file Parquet: {e}")
 
+stop_ids_set = set(stop_times[stop_times['trip_id'].isin(trip_ids)]['stop_id'].unique())
 
+if stop_ids_set:
+    # Filtra fermate
+    fermate_linea = stops[stops["stop_id"].isin(stop_ids_set)].drop_duplicates(subset="stop_id")
+    fermate_linea["stop_lat"] = fermate_linea["stop_lat"].astype(float)
+    fermate_linea["stop_lon"] = fermate_linea["stop_lon"].astype(float)
+
+    st.markdown(f"**Numero di fermate trovate:** {len(fermate_linea)}")
 
 st.subheader("Mappa delle fermate associate alle corse selezionate")
 
