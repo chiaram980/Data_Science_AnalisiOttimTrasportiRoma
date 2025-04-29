@@ -104,7 +104,7 @@ st.download_button("Scarica CSV", data=csv, file_name="ritardi_filtrati.csv", mi
 
 # ======================== Sezione 6: Fermate per Linea ========================
 
-st.subheader("Visualizza fermate di una linea specifica")
+
 
 try:
     routes = pd.read_csv("routes.txt", dtype=str, low_memory=False)
