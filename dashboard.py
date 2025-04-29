@@ -317,6 +317,31 @@ except FileNotFoundError as e:
     st.error(f"File non trovato: {e.filename}")
 
 # Mappa fermate delle corse selezionate
+import streamlit as st
+import pandas as pd
+import requests
+import io
+
+# === Link diretto Google Drive ===
+file_id = "1Qx7jVKObRN79CLJwIy9Jzh0VwJ2D9dWZ"
+download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+
+st.markdown("### Caricamento del file stop_times da Google Drive...")
+
+try:
+    with requests.get(download_url, stream=True) as response:
+        response.raise_for_status()
+        file_stream = io.BytesIO(response.content)
+
+        # Caricamento del Parquet
+        stop_times = pd.read_parquet(file_stream)
+        st.success("File caricato correttamente da Google Drive.")
+except requests.exceptions.RequestException as e:
+    st.error(f"Errore durante il download da Google Drive: {e}")
+except Exception as e:
+    st.error(f"Errore durante la lettura del file Parquet: {e}")
+
+
 
 st.subheader("Mappa delle fermate associate alle corse selezionate")
 
