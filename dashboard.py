@@ -151,3 +151,58 @@ except FileNotFoundError as e:
     st.error(f"File mancante: {e.filename}")
 except Exception as e:
     st.error(f"Errore nella costruzione della mappa: {e}")
+
+# =================== Analisi dei ritardi per giorno della settimana ===================
+
+st.subheader("Analisi dei ritardi per giorno della settimana")
+
+# Aggiunta della colonna day_of_week
+data_fascia['day_of_week'] = [
+    'Lunedì', 'Lunedì', 'Martedì', 'Mercoledì', 'Martedì', 'Giovedì', 'Venerdì', 'Venerdì',
+    'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Lunedì', 'Martedì', 'Mercoledì',
+    'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Giovedì', 'Venerdì', 'Venerdì'
+]
+
+# Sidebar - Filtri ritardi settimanali
+st.sidebar.header("Filtri ritardi per giorno della settimana")
+
+settimane_disp = sorted(data_fascia['week_range'].unique())
+giorni_disp = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì']
+linee_disp = sorted(data_fascia['route_id'].unique())
+
+selected_week_day = st.sidebar.selectbox(
+    "Seleziona la settimana:", settimane_disp, key="settimana_giorno"
+)
+
+selected_days = st.sidebar.multiselect(
+    "Seleziona i giorni:", giorni_disp, default=giorni_disp, key="giorni_giorno"
+)
+
+selected_routes_day = st.sidebar.multiselect(
+    "Seleziona le linee:", linee_disp, default=linee_disp, key="linee_giorno"
+)
+
+# Filtro dati
+data_giornaliera = data_fascia[
+    (data_fascia['week_range'] == selected_week_day) &
+    (data_fascia['day_of_week'].isin(selected_days)) &
+    (data_fascia['route_id'].isin(selected_routes_day))
+]
+
+# Grafico lineare
+fig_day = px.line(
+    data_giornaliera,
+    x="day_of_week",
+    y="delay",
+    color="route_id",
+    markers=True,
+    labels={"day_of_week": "Giorno della settimana", "delay": "Ritardo medio (min)", "route_id": "Linea"},
+    title=f"Andamento dei ritardi nella settimana {selected_week_day}"
+)
+st.plotly_chart(fig_day, use_container_width=True)
+
+# Tabella dati giornalieri
+st.subheader("Dati ritardi per giorno filtrati")
+st.dataframe(data_giornaliera.sort_values(by=["route_id", "day_of_week"]))
+
+
