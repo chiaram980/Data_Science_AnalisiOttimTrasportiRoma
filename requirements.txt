@@ -11,3 +11,4 @@ gdown
 streamlit-folium
 requests
 pyarrow
+streamlit>=1.30.0
