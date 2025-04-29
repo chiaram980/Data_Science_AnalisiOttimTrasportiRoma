@@ -39,18 +39,18 @@ data_fascia = pd.DataFrame({
 data_fascia["week_range"] = data_fascia["hour"].apply(lambda x: "3-7 marzo" if x in [13, 14] else "10-14 febbraio")
 data_fascia["hour"] = data_fascia["hour"].astype(str)
 data_fascia['day_of_week'] = [
-    'Luned\u00ec', 'Luned\u00ec', 'Marted\u00ec', 'Mercoled\u00ec', 'Marted\u00ec', 'Gioved\u00ec', 'Venerd\u00ec', 'Venerd\u00ec',
-    'Luned\u00ec', 'Marted\u00ec', 'Mercoled\u00ec', 'Gioved\u00ec', 'Venerd\u00ec', 'Luned\u00ec', 'Marted\u00ec', 'Mercoled\u00ec',
-    'Luned\u00ec', 'Marted\u00ec', 'Mercoled\u00ec', 'Gioved\u00ec', 'Venerd\u00ec', 'Gioved\u00ec', 'Venerd\u00ec', 'Venerd\u00ec'
+    'Lunedì', 'Lunedì', 'Martedì', 'Mercoledì', 'Martedì', 'Giovedì', 'Venerdì', 'Venerdì',
+    'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Lunedì', 'Martedì', 'Mercoledì',
+    'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Giovedì', 'Venerdì', 'Venerdì'
 ]
 
 # ======================== Titolo ========================
 
-st.title("\ud83d\udcc5 Dashboard Ritardi Trasporti Pubblici - Roma")
+st.title("Dashboard Ritardi Trasporti Pubblici - Roma")
 
 # ======================== Sidebar - Filtri Iniziali ========================
 
-st.sidebar.header("\ud83d\udcc5 Filtri Ritardi Settimanali")
+st.sidebar.header("Filtri Ritardi Settimanali")
 
 selected_week = st.sidebar.selectbox("Seleziona la settimana:", sorted(data_fascia["week_range"].unique()))
 selected_hours = st.sidebar.multiselect("Seleziona le ore:", sorted(data_fascia['hour'].unique()), default=sorted(data_fascia['hour'].unique()))
