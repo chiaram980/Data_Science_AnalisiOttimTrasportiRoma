@@ -102,57 +102,6 @@ st.metric("Ritardo medio complessivo (min)", f"{media_ritardo:.2f}")
 csv = filtered_data.to_csv(index=False).encode('utf-8')
 st.download_button("Scarica CSV", data=csv, file_name="ritardi_filtrati.csv", mime="text/csv")
 
-# ======================== Sezione 6: Fermate per Linea ========================
-
-st.subheader("Visualizza fermate di una linea specifica")
-
-try:
-    routes = pd.read_csv("routes.txt", dtype=str, low_memory=False)
-    trips = pd.read_csv("trips.txt", dtype=str, low_memory=False)
-    stops = pd.read_csv("stops.txt", dtype=str, low_memory=False)
-
-    routes = routes[(routes['agency_id'] == 'OP1') & (routes['route_type'] == '3')]
-    route_ids = sorted(routes['route_id'].unique())
-
-    route_id_selezionato = st.selectbox("Seleziona una linea (route_id):", route_ids)
-
-    nome_linea = routes[routes["route_id"] == route_id_selezionato]["route_long_name"].iloc[0]
-    st.markdown(f"**Linea selezionata:** `{route_id_selezionato}`")
-
-    trips_linea = trips[trips["route_id"] == route_id_selezionato]
-    trip_ids = trips_linea["trip_id"].unique()
-
-    # Caricamento stop_times dal file parquet su Google Drive
-    file_id = "1Qx7jVKObRN79CLJwIy9Jzh0VwJ2D9dWZ"
-    download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
-    response = requests.get(download_url, stream=True)
-    response.raise_for_status()
-    stop_times = pd.read_parquet(io.BytesIO(response.content))
-
-    stop_ids_set = set(stop_times[stop_times['trip_id'].isin(trip_ids)]['stop_id'].unique())
-
-    if stop_ids_set:
-        fermate_linea = stops[stops["stop_id"].isin(stop_ids_set)].drop_duplicates(subset="stop_id")
-        fermate_linea["stop_lat"] = fermate_linea["stop_lat"].astype(float)
-        fermate_linea["stop_lon"] = fermate_linea["stop_lon"].astype(float)
-
-        st.markdown(f"**Numero di fermate trovate:** {len(fermate_linea)}")
-        st.dataframe(fermate_linea[["stop_name", "stop_lat", "stop_lon"]].sort_values(by="stop_name"))
-
-        m = folium.Map(location=[fermate_linea["stop_lat"].mean(), fermate_linea["stop_lon"].mean()], zoom_start=13)
-        for _, stop in fermate_linea.iterrows():
-            folium.CircleMarker(location=(stop['stop_lat'], stop['stop_lon']), radius=4, color='blue', fill=True, fill_opacity=0.7, tooltip=stop['stop_name']).add_to(m)
-
-        st_folium(m, width=700, height=500)
-    else:
-        st.warning("Nessuna fermata trovata.")
-
-except FileNotFoundError as e:
-    st.error(f"File mancante: {e.filename}")
-except Exception as e:
-    st.error(f"Errore nella costruzione della mappa: {e}")
-
-
 # =================== Output del modello prescrittivo: ottimizzazione delle corse ===================
 
 st.subheader("Output del modello prescrittivo: ottimizzazione delle corse (fasce orarie multiple)")
@@ -167,128 +116,87 @@ try:
     df2 = pd.read_csv(file2)
 
     # Aggiunta colonna 'fascia_oraria' per distinguere
-    df1['fascia_oraria'] = "12-15"
-    df2['fascia_oraria'] = "08-11"
+    df1['fascia_oraria'] = "13-14"
+    df2['fascia_oraria'] = "09-10"
 
     df_opt_all = pd.concat([df1, df2], ignore_index=True)
     df_opt_all['hour'] = df_opt_all['hour'].astype(str)
 
-    # Sidebar - Filtri ottimizzazione
-    st.sidebar.header("Filtri corse ottimizzate")
+st.sidebar.header("Filtri corse ottimizzate")
+    selected_fasce = st.sidebar.multiselect("Seleziona la fascia oraria:", df_opt_all['fascia_oraria'].unique(), default=df_opt_all['fascia_oraria'].unique(), key="fasce_opt")
+    selected_routes_opt = st.sidebar.multiselect("Seleziona le linee:", sorted(df_opt_all['route_id'].unique()), default=sorted(df_opt_all['route_id'].unique()), key="linee_opt")
 
-    selected_fasce = st.sidebar.multiselect(
-        "Seleziona la fascia oraria:",
-        df_opt_all['fascia_oraria'].unique(),
-        default=df_opt_all['fascia_oraria'].unique(),
-        key="fasce_ottimizzazione"
-    )
+    df_ottimizzato = df_opt_all[(df_opt_all['fascia_oraria'].isin(selected_fasce)) & (df_opt_all['route_id'].isin(selected_routes_opt))]
 
-    selected_routes_opt = st.sidebar.multiselect(
-        "Seleziona le linee:",
-        sorted(df_opt_all['route_id'].unique()),
-        default=sorted(df_opt_all['route_id'].unique()),
-        key="linee_ottimizzazione"
-    )
-
-    # Applicazione filtri
-    df_ottimizzato = df_opt_all[
-        (df_opt_all['fascia_oraria'].isin(selected_fasce)) &
-        (df_opt_all['route_id'].isin(selected_routes_opt))
-    ]
-
-    # Barplot corse extra
-    st.subheader("Corse extra suggerite per linea e fascia oraria")
-    fig_ott = px.bar(
-        df_ottimizzato,
-        x="route_id",
-        y="extra_trips",
-        color="fascia_oraria",
-        barmode="group",
-        labels={"extra_trips": "Corse extra", "route_id": "Linea"},
-        title="Distribuzione delle corse extra suggerite dal modello"
-    )
+    fig_ott = px.bar(df_ottimizzato, x="route_id", y="extra_trips", color="fascia_oraria", barmode="group")
     st.plotly_chart(fig_ott, use_container_width=True)
 
-    # Tabella dati ottimizzati
-    st.subheader("Tabella corse ottimizzate")
     st.dataframe(df_ottimizzato.sort_values(by="extra_trips", ascending=False))
-
-    # Metriche
     st.metric("Totale corse extra", int(df_ottimizzato['extra_trips'].sum()))
     st.metric("Riduzione stimata complessiva (minuti)", f"{df_ottimizzato['estimated_impact'].sum():.2f}")
 
 except FileNotFoundError as e:
     st.error(f"File non trovato: {e.filename}")
 
-
-
-
-
-# =================== Mappa fermate delle corse selezionate (ottimizzate) ===================
+# ======================== Mappa fermate corse ottimizzate ========================
 
 st.subheader("Mappa delle fermate associate alle corse ottimizzate")
 
-if 'df_ottimizzato' in locals():
-    try:
-        if 'routes' not in locals():
-            routes = pd.read_csv("routes.txt", dtype=str, low_memory=False)
-        if 'trips' not in locals():
-            trips = pd.read_csv("trips.txt", dtype=str, low_memory=False)
-        if 'stops' not in locals():
-            stops = pd.read_csv("stops.txt", dtype=str, low_memory=False)
+try:
+    file_id_stops = "1aEotLtQ4E1UuKWRLKvgk1SX8R9bnHDPz"  # (id GDrive del file stops.txt)
+    url_stops = f"https://drive.google.com/uc?export=download&id={file_id_stops}"
+    response_stops = requests.get(url_stops)
+    stops = pd.read_csv(io.BytesIO(response_stops.content), dtype=str, low_memory=False)
 
-        # Normalizzazione ID linea
-        corse_ottimizzate = df_ottimizzato[['route_id', 'hour']].drop_duplicates().copy()
-        corse_ottimizzate['route_id_gtfs'] = corse_ottimizzate['route_id'].str.replace("Linea ", "").str.strip()
+    stop_times_file = "https://drive.google.com/uc?export=download&id=1Qx7jVKObRN79CLJwIy9Jzh0VwJ2D9dWZ"
+    stop_times = pd.read_parquet(io.BytesIO(requests.get(stop_times_file).content))
 
-        fermate_ottimizzate = pd.DataFrame()
-        palette_opt = px.colors.qualitative.Set3
+    trips = pd.read_csv("trips.txt", dtype=str, low_memory=False)
 
-        for idx, row in corse_ottimizzate.iterrows():
-            trips_match = trips[trips['route_id'] == row['route_id_gtfs']]
-            if not trips_match.empty:
-                trip_id = trips_match['trip_id'].iloc[0]
-                stops_trip = stop_times[stop_times['trip_id'] == trip_id]
-                stop_ids = stops_trip['stop_id'].unique()
-                fermate_linea = stops[stops['stop_id'].isin(stop_ids)].copy()
-                fermate_linea['route_id'] = row['route_id']
-                colore = palette_opt[idx % len(palette_opt)]
-                fermate_linea['color'] = colore
-                fermate_ottimizzate = pd.concat([fermate_ottimizzate, fermate_linea], ignore_index=True)
+    corse_ottimizzate = df_ottimizzato[['route_id', 'hour']].drop_duplicates().copy()
+    corse_ottimizzate['route_id_gtfs'] = corse_ottimizzate['route_id'].str.replace("Linea ", "").str.strip()
 
-        if fermate_ottimizzate.empty:
-            st.warning("Nessuna fermata trovata per le corse ottimizzate selezionate.")
-        else:
-            fermate_ottimizzate['stop_lat'] = fermate_ottimizzate['stop_lat'].astype(float)
-            fermate_ottimizzate['stop_lon'] = fermate_ottimizzate['stop_lon'].astype(float)
+    fermate_finali = pd.DataFrame()
+    palette_opt = px.colors.qualitative.Set3
 
-            m_opt = folium.Map(
-                location=[fermate_ottimizzate['stop_lat'].mean(), fermate_ottimizzate['stop_lon'].mean()],
-                zoom_start=12
-            )
+    for idx, row in corse_ottimizzate.iterrows():
+        trips_match = trips[trips['route_id'] == row['route_id_gtfs']]
+        if not trips_match.empty:
+            trip_id = trips_match['trip_id'].iloc[0]
+            stops_trip = stop_times[stop_times['trip_id'] == trip_id]
+            stop_ids = stops_trip['stop_id'].unique()
+            fermate_linea = stops[stops['stop_id'].isin(stop_ids)].copy()
+            fermate_linea['route_id'] = row['route_id']
+            fermate_linea['color'] = palette_opt[idx % len(palette_opt)]
+            fermate_finali = pd.concat([fermate_finali, fermate_linea], ignore_index=True)
 
-            for _, row in fermate_ottimizzate.iterrows():
-                folium.CircleMarker(
-                    location=(row['stop_lat'], row['stop_lon']),
-                    radius=5,
-                    color=row['color'],
-                    fill=True,
-                    fill_color=row['color'],
-                    fill_opacity=0.8,
-                    tooltip=row['stop_name']
-                ).add_to(m_opt)
+    if fermate_finali.empty:
+        st.warning("Nessuna fermata trovata per le corse ottimizzate.")
+    else:
+        fermate_finali['stop_lat'] = fermate_finali['stop_lat'].astype(float)
+        fermate_finali['stop_lon'] = fermate_finali['stop_lon'].astype(float)
 
-            st_folium(m_opt, width=700, height=500)
-            st.markdown("**Figura:** Mappa interattiva delle fermate associate alle corse ottimizzate.")
+        m_finale = folium.Map(location=[fermate_finali['stop_lat'].mean(), fermate_finali['stop_lon'].mean()], zoom_start=12)
 
-            # Tabella fermate ottimizzate
-            st.subheader("Fermate coinvolte nelle corse ottimizzate")
-            st.dataframe(fermate_ottimizzate[['route_id', 'stop_name', 'stop_lat', 'stop_lon']].drop_duplicates().sort_values(by='route_id'))
+        for _, row in fermate_finali.iterrows():
+            folium.CircleMarker(
+                location=(row['stop_lat'], row['stop_lon']),
+                radius=5,
+                color=row['color'],
+                fill=True,
+                fill_color=row['color'],
+                fill_opacity=0.8,
+                tooltip=row['stop_name']
+            ).add_to(m_finale)
 
-    except FileNotFoundError as e:
-        st.error(f"File mancante: {e.filename}")
-else:
-    st.warning("Dati delle corse ottimizzate non caricati. Impossibile creare la mappa.")
+        st_folium(m_finale, width=700, height=500)
+        st.markdown("**Figura:** Mappa delle fermate delle corse ottimizzate.")
+
+        st.subheader("Fermate coinvolte nelle corse ottimizzate")
+        st.dataframe(fermate_finali[['route_id', 'stop_name', 'stop_lat', 'stop_lon']].drop_duplicates().sort_values(by='route_id'))
+
+except Exception as e:
+    st.error(f"Errore caricamento dati mappa: {e}")
 
 
 
