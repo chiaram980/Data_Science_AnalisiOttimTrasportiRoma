@@ -62,7 +62,7 @@ filtered_data = data_fascia[(data_fascia['hour'].isin(selected_hours)) & (data_f
 
 # ======================== Sezione 1: Ritardi Medi ========================
 
-st.subheader(f"\ud83d\udcca Ritardi medi per linea e ora - Settimana {selected_week}")
+st.subheader(f"Ritardi medi per linea e ora - Settimana {selected_week}")
 
 fig1 = px.bar(filtered_data, x="route_id", y="delay", color="hour", barmode="group")
 st.plotly_chart(fig1, use_container_width=True)
@@ -71,7 +71,7 @@ st.markdown("**Figura 1:** Il grafico mostra i ritardi medi delle linee selezion
 
 # ======================== Sezione 2: Heatmap Corse Extra ========================
 
-st.subheader("\ud83c\udf21\ufe0f Heatmap delle corse extra")
+st.subheader("Heatmap delle corse extra")
 
 pivot = filtered_data.pivot_table(index='route_id', columns='hour', values='extra_trips', fill_value=0)
 fig2, ax2 = plt.subplots(figsize=(10,6))
@@ -82,7 +82,7 @@ st.markdown("**Figura 2:** Heatmap delle corse extra suggerite dal modello.")
 
 # ======================== Sezione 3: Scatter Plot Ritardi ========================
 
-st.subheader("\ud83d\udcc8 Distribuzione dei ritardi medi")
+st.subheader("Distribuzione dei ritardi medi")
 
 fig3 = px.scatter(filtered_data, x="hour", y="delay", size="extra_trips", color="route_id")
 st.plotly_chart(fig3, use_container_width=True)
@@ -91,7 +91,7 @@ st.markdown("**Figura 3:** Ogni punto rappresenta una linea in una determinata o
 
 # ======================== Sezione 4: Tabella & Metriche ========================
 
-st.subheader("\ud83d\udcca Tabella dati filtrati")
+st.subheader("Tabella dati filtrati")
 st.dataframe(filtered_data.sort_values(by="delay", ascending=False))
 
 media_ritardo = filtered_data['delay'].mean()
@@ -100,11 +100,11 @@ st.metric("Ritardo medio complessivo (min)", f"{media_ritardo:.2f}")
 # ======================== Sezione 5: Esportazione ========================
 
 csv = filtered_data.to_csv(index=False).encode('utf-8')
-st.download_button("\ud83d\udce5 Scarica CSV", data=csv, file_name="ritardi_filtrati.csv", mime="text/csv")
+st.download_button("Scarica CSV", data=csv, file_name="ritardi_filtrati.csv", mime="text/csv")
 
 # ======================== Sezione 6: Fermate per Linea ========================
 
-st.subheader("\ud83d\udccd Visualizza fermate di una linea specifica")
+st.subheader("Visualizza fermate di una linea specifica")
 
 try:
     routes = pd.read_csv("routes.txt", dtype=str, low_memory=False)
