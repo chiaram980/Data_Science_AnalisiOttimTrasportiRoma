@@ -159,6 +159,18 @@ st.plotly_chart(fig_settimanale, use_container_width=True)
 st.dataframe(data_giornaliera.sort_values(by=['route_id', 'day_of_week']))
 
 # ======================== Sezione 8: Output Modello Prescrittivo (Ottimizzazione) ========================
+# Controlla se il dataframe df_opt_all è stato caricato, altrimenti caricalo ora
+if 'df_opt_all' not in locals():
+    try:
+        df1 = pd.read_csv("ottimizzazione_dashboard_20250325_112654.csv")
+        df2 = pd.read_csv("ottimizzazione_dashboard_20250325_113839.csv")
+        df1['fascia_oraria'] = "12-15"
+        df2['fascia_oraria'] = "08-11"
+        df_opt_all = pd.concat([df1, df2], ignore_index=True)
+        df_opt_all['hour'] = df_opt_all['hour'].astype(str)
+    except FileNotFoundError as e:
+        st.error(f"File mancante per ottimizzazione: {e.filename}")
+
 
 st.subheader("Output del modello prescrittivo: ottimizzazione delle corse (fasce orarie multiple)")
 
