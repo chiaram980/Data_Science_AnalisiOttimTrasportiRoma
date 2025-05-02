@@ -7,12 +7,45 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import requests
 import io
-import os
-import gdown
 
-# ======================== Caricamento dati iniziali ========================
+# ========== Funzioni di supporto ==========
 
-# Dataset base
+@st.cache_data
+def carica_dataset_gtfs():
+    routes = pd.read_csv("routes.txt", dtype=str, low_memory=False)
+    trips = pd.read_csv("trips.txt", dtype=str, low_memory=False)
+    stops = pd.read_csv("stops.txt", dtype=str, low_memory=False)
+    return routes, trips, stops
+
+@st.cache_data
+def carica_stop_times(file_id):
+    url = f"https://drive.google.com/uc?export=download&id={file_id}"
+    response = requests.get(url, stream=True)
+    response.raise_for_status()
+    return pd.read_parquet(io.BytesIO(response.content))
+
+def filtra_routes(routes, dashboard_ids):
+    ids_gtfs = [x.replace("Linea ", "").strip() for x in dashboard_ids]
+    return routes[(routes['agency_id'] == 'OP1') & (routes['route_type'] == '3') & (routes['route_id'].isin(ids_gtfs))]
+
+def genera_mappa_fermate(trips, stop_times, stops, ottimizzate_df):
+    palette = px.colors.qualitative.Set3
+    fermate = pd.DataFrame()
+
+    ottimizzate_df['route_id_gtfs'] = ottimizzate_df['route_id'].str.replace("Linea ", "").str.strip()
+    for i, row in ottimizzate_df.iterrows():
+        match = trips[trips['route_id'] == row['route_id_gtfs']]
+        if not match.empty:
+            trip_id = match['trip_id'].iloc[0]
+            stops_trip = stop_times[stop_times['trip_id'] == trip_id]
+            stop_ids = stops_trip['stop_id'].unique()
+            fermate_linea = stops[stops['stop_id'].isin(stop_ids)].copy()
+            fermate_linea['route_id'] = row['route_id']
+            fermate_linea['color'] = palette[i % len(palette)]
+            fermate = pd.concat([fermate, fermate_linea], ignore_index=True)
+    return fermate
+
+# ========== Dataset base ==========
 
 data_fascia = pd.DataFrame({
     'route_id': [
@@ -33,9 +66,6 @@ data_fascia = pd.DataFrame({
         7, 3, 1, 1, 1, 1, 1, 1
     ]
 })
-
-# Aggiunta colonne
-
 data_fascia["week_range"] = data_fascia["hour"].apply(lambda x: "3-7 marzo" if x in [13, 14] else "10-14 febbraio")
 data_fascia["hour"] = data_fascia["hour"].astype(str)
 data_fascia['day_of_week'] = [
@@ -44,225 +74,80 @@ data_fascia['day_of_week'] = [
     'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Giovedì', 'Venerdì', 'Venerdì'
 ]
 
-# ======================== Titolo ========================
+# ========== Layout Streamlit ==========
 
 st.title("Dashboard Ritardi Trasporti Pubblici - Roma")
 
-# ======================== Sidebar - Filtri Iniziali ========================
-
+# Sidebar filtri
 st.sidebar.header("Filtri Ritardi Settimanali")
+week = st.sidebar.selectbox("Settimana:", sorted(data_fascia["week_range"].unique()))
+hours = st.sidebar.multiselect("Ore:", sorted(data_fascia['hour'].unique()), default=sorted(data_fascia['hour'].unique()))
+routes_sel = st.sidebar.multiselect("Linee:", sorted(data_fascia['route_id'].unique()), default=sorted(data_fascia['route_id'].unique()))
 
-selected_week = st.sidebar.selectbox("Seleziona la settimana:", sorted(data_fascia["week_range"].unique()))
-selected_hours = st.sidebar.multiselect("Seleziona le ore:", sorted(data_fascia['hour'].unique()), default=sorted(data_fascia['hour'].unique()))
-selected_routes = st.sidebar.multiselect("Seleziona le linee:", sorted(data_fascia['route_id'].unique()), default=sorted(data_fascia['route_id'].unique()))
+# Filtro
+filtered = data_fascia[(data_fascia['hour'].isin(hours)) & (data_fascia['route_id'].isin(routes_sel)) & (data_fascia['week_range'] == week)]
 
-# ======================== Applicazione filtri ========================
+# Grafici
+st.subheader(f"Ritardi medi - Settimana {week}")
+st.plotly_chart(px.bar(filtered, x="route_id", y="delay", color="hour", barmode="group"), use_container_width=True)
+st.markdown("**Figura 1:** Ritardi medi per ora e linea.")
 
-filtered_data = data_fascia[(data_fascia['hour'].isin(selected_hours)) & (data_fascia['route_id'].isin(selected_routes)) & (data_fascia['week_range'] == selected_week)]
+st.subheader("Heatmap corse extra")
+pivot = filtered.pivot_table(index='route_id', columns='hour', values='extra_trips', fill_value=0)
+fig_hm, ax = plt.subplots(figsize=(10,6))
+sns.heatmap(pivot, cmap='coolwarm', annot=True, fmt='g', ax=ax)
+st.pyplot(fig_hm)
 
-# ======================== Sezione 1: Ritardi Medi ========================
+st.subheader("Distribuzione ritardi medi")
+st.plotly_chart(px.scatter(filtered, x="hour", y="delay", size="extra_trips", color="route_id"), use_container_width=True)
 
-st.subheader(f"Ritardi medi per linea e ora - Settimana {selected_week}")
+st.subheader("Dati filtrati")
+st.dataframe(filtered.sort_values(by="delay", ascending=False))
+st.metric("Ritardo medio complessivo (min)", f"{filtered['delay'].mean():.2f}")
+st.download_button("Scarica CSV", data=filtered.to_csv(index=False).encode('utf-8'), file_name="ritardi_filtrati.csv", mime="text/csv")
 
-fig1 = px.bar(filtered_data, x="route_id", y="delay", color="hour", barmode="group")
-st.plotly_chart(fig1, use_container_width=True)
+# ========== Output modello prescrittivo ==========
 
-st.markdown("**Figura 1:** Il grafico mostra i ritardi medi delle linee selezionate, suddivisi per ora della giornata.")
-
-# ======================== Sezione 2: Heatmap Corse Extra ========================
-
-st.subheader("Heatmap delle corse extra")
-
-pivot = filtered_data.pivot_table(index='route_id', columns='hour', values='extra_trips', fill_value=0)
-fig2, ax2 = plt.subplots(figsize=(10,6))
-sns.heatmap(pivot, cmap='coolwarm', annot=True, fmt='g', ax=ax2)
-st.pyplot(fig2)
-
-st.markdown("**Figura 2:** Heatmap delle corse extra suggerite dal modello.")
-
-# ======================== Sezione 3: Scatter Plot Ritardi ========================
-
-st.subheader("Distribuzione dei ritardi medi")
-
-fig3 = px.scatter(filtered_data, x="hour", y="delay", size="extra_trips", color="route_id")
-st.plotly_chart(fig3, use_container_width=True)
-
-st.markdown("**Figura 3:** Ogni punto rappresenta una linea in una determinata ora.")
-
-# ======================== Sezione 4: Tabella & Metriche ========================
-
-st.subheader("Tabella dati filtrati")
-st.dataframe(filtered_data.sort_values(by="delay", ascending=False))
-
-media_ritardo = filtered_data['delay'].mean()
-st.metric("Ritardo medio complessivo (min)", f"{media_ritardo:.2f}")
-
-# ======================== Sezione 5: Esportazione ========================
-
-csv = filtered_data.to_csv(index=False).encode('utf-8')
-st.download_button("Scarica CSV", data=csv, file_name="ritardi_filtrati.csv", mime="text/csv")
-
-
-# ======================== Sezione 6: Caricamento e filtro fermate ========================
+file1, file2 = "ottimizzazione_dashboard_20250325_112654.csv", "ottimizzazione_dashboard_20250325_113839.csv"
 try:
-    routes = pd.read_csv("routes.txt", dtype=str, low_memory=False)
-    trips = pd.read_csv("trips.txt", dtype=str, low_memory=False)
-    stops = pd.read_csv("stops.txt", dtype=str, low_memory=False)
+    df1, df2 = pd.read_csv(file1), pd.read_csv(file2)
+    df1["fascia_oraria"], df2["fascia_oraria"] = "13-14", "09-10"
+    df_opt = pd.concat([df1, df2], ignore_index=True)
+    df_opt['hour'] = df_opt['hour'].astype(str)
 
-    # Lista route_id della dashboard
-    route_ids_dashboard = [
-        'Linea 73', 'Linea 664', 'Linea 107', 'Linea 64', 'Linea 063', 'Linea 058F', 'Linea 990L', 'Linea 336',
-        'Linea 716', 'Linea 338', 'Linea 762', 'Linea 360', 'Linea 507', 'Linea 913', 'Linea 766', 'Linea 515'
-    ]
-
-    # Normalizzazione ID GTFS
-    route_ids_gtfs = [rid.replace("Linea ", "").strip() for rid in route_ids_dashboard]
-
-    # Filtra routes
-    routes = routes[(routes['agency_id'] == 'OP1') & (routes['route_type'] == '3') & (routes['route_id'].isin(route_ids_gtfs))]
-
-    # Filtra trips in base a route_id
-    trips_filtrati = trips[trips['route_id'].isin(routes['route_id'])]
-    trip_ids_filtrati = trips_filtrati['trip_id'].unique()
-
-    # Carica e filtra stop_times dal Parquet su Google Drive
-    file_id = "1Qx7jVKObRN79CLJwIy9Jzh0VwJ2D9dWZ"
-    download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
-    response = requests.get(download_url, stream=True)
-    response.raise_for_status()
-    stop_times_full = pd.read_parquet(io.BytesIO(response.content))
-
-    # Filtra solo i trip_id desiderati
-    stop_times = stop_times_full[stop_times_full['trip_id'].isin(trip_ids_filtrati)]
-
-except Exception as e:
-    st.error(f"Errore nel caricamento dei file delle fermate: {e}")
-# =================== Output del modello prescrittivo: ottimizzazione delle corse ===================
-
-st.subheader("Output del modello prescrittivo: ottimizzazione delle corse (fasce orarie multiple)")
-
-# Percorsi fissi dei due file
-file1 = "ottimizzazione_dashboard_20250325_112654.csv"
-file2 = "ottimizzazione_dashboard_20250325_113839.csv"
-
-# Caricamento dati
-try:
-    df1 = pd.read_csv(file1)
-    df2 = pd.read_csv(file2)
-
-    # Aggiunta colonna 'fascia_oraria' per distinguere
-    df1['fascia_oraria'] = "12-15"
-    df2['fascia_oraria'] = "08-11"
-
-    df_opt_all = pd.concat([df1, df2], ignore_index=True)
-    df_opt_all['hour'] = df_opt_all['hour'].astype(str)
-
-    # Sidebar - Filtri ottimizzazione
     st.sidebar.header("Filtri corse ottimizzate")
+    fasce = st.sidebar.multiselect("Fascia oraria:", df_opt['fascia_oraria'].unique(), default=list(df_opt['fascia_oraria'].unique()))
+    routes_opt = st.sidebar.multiselect("Linee:", sorted(df_opt['route_id'].unique()), default=sorted(df_opt['route_id'].unique()), key="opt_routes")
+    df_opt_filt = df_opt[df_opt['fascia_oraria'].isin(fasce) & df_opt['route_id'].isin(routes_opt)]
 
-    selected_fasce = st.sidebar.multiselect(
-        "Seleziona la fascia oraria:",
-        df_opt_all['fascia_oraria'].unique(),
-        default=df_opt_all['fascia_oraria'].unique(),
-        key="fasce_ottimizzazione"
-    )
+    st.subheader("Corse extra suggerite")
+    fig_bar_opt = px.bar(df_opt_filt, x="route_id", y="extra_trips", color="fascia_oraria", barmode="group")
+    st.plotly_chart(fig_bar_opt, use_container_width=True)
 
-    selected_routes_opt = st.sidebar.multiselect(
-        "Seleziona le linee:",
-        sorted(df_opt_all['route_id'].unique()),
-        default=sorted(df_opt_all['route_id'].unique()),
-        key="linee_ottimizzazione"
-    )
-
-    # Applicazione filtri
-    df_ottimizzato = df_opt_all[
-        (df_opt_all['fascia_oraria'].isin(selected_fasce)) &
-        (df_opt_all['route_id'].isin(selected_routes_opt))
-    ]
-
-    # Barplot corse extra
-    st.subheader("Corse extra suggerite per linea e fascia oraria")
-    fig_ott = px.bar(
-        df_ottimizzato,
-        x="route_id",
-        y="extra_trips",
-        color="fascia_oraria",
-        barmode="group",
-        labels={"extra_trips": "Corse extra", "route_id": "Linea"},
-        title="Distribuzione delle corse extra suggerite dal modello"
-    )
-    st.plotly_chart(fig_ott, use_container_width=True)
-
-    # Tabella dati ottimizzati
     st.subheader("Tabella corse ottimizzate")
-    st.dataframe(df_ottimizzato.sort_values(by="extra_trips", ascending=False))
+    st.dataframe(df_opt_filt.sort_values(by="extra_trips", ascending=False))
+    st.metric("Totale corse extra", int(df_opt_filt['extra_trips'].sum()))
+    st.metric("Riduzione stimata complessiva (minuti)", f"{df_opt_filt['estimated_impact'].sum():.2f}")
 
-    # Metriche
-    st.metric("Totale corse extra", int(df_ottimizzato['extra_trips'].sum()))
-    st.metric("Riduzione stimata complessiva (minuti)", f"{df_ottimizzato['estimated_impact'].sum():.2f}")
+    # ========== Mappa fermate ottimizzate ==========
+
+    routes, trips, stops = carica_dataset_gtfs()
+    routes_filt = filtra_routes(routes, df_opt_filt['route_id'].unique())
+    trips_filt = trips[trips['route_id'].isin(routes_filt['route_id'])]
+    stop_times = carica_stop_times("1Qx7jVKObRN79CLJwIy9Jzh0VwJ2D9dWZ")
+    stop_times_filt = stop_times[stop_times['trip_id'].isin(trips_filt['trip_id'].unique())]
+
+    fermate = genera_mappa_fermate(trips_filt, stop_times_filt, stops, df_opt_filt[['route_id', 'hour']].drop_duplicates())
+    if not fermate.empty:
+        fermate[['stop_lat', 'stop_lon']] = fermate[['stop_lat', 'stop_lon']].astype(float)
+        m = folium.Map(location=[fermate['stop_lat'].mean(), fermate['stop_lon'].mean()], zoom_start=12)
+        for _, r in fermate.iterrows():
+            folium.CircleMarker(location=[r['stop_lat'], r['stop_lon']], radius=5, color=r['color'], fill=True, fill_color=r['color'], fill_opacity=0.8, tooltip=r['stop_name']).add_to(m)
+        st.subheader("Mappa delle fermate ottimizzate")
+        st_folium(m, width=700, height=500)
+        st.dataframe(fermate[['route_id', 'stop_name', 'stop_lat', 'stop_lon']].drop_duplicates().sort_values(by='route_id'))
+    else:
+        st.warning("Nessuna fermata trovata per le corse ottimizzate selezionate.")
 
 except FileNotFoundError as e:
-    st.error(f"File non trovato: {e.filename}")
-
-# =================== Mappa fermate delle corse selezionate (ottimizzate) ===================
-if 'df_ottimizzato' in locals():
-    try:
-        if 'routes' not in locals():
-            routes = pd.read_csv("routes.txt", dtype=str, low_memory=False)
-        if 'trips' not in locals():
-            trips = pd.read_csv("trips.txt", dtype=str, low_memory=False)
-        if 'stops' not in locals():
-            stops = pd.read_csv("stops.txt", dtype=str, low_memory=False)
-
-        # Normalizzazione ID linea
-        corse_ottimizzate = df_ottimizzato[['route_id', 'hour']].drop_duplicates().copy()
-        corse_ottimizzate['route_id_gtfs'] = corse_ottimizzate['route_id'].str.replace("Linea ", "").str.strip()
-
-        fermate_ottimizzate = pd.DataFrame()
-        palette_opt = px.colors.qualitative.Set3
-
-        for idx, row in corse_ottimizzate.iterrows():
-            trips_match = trips[trips['route_id'] == row['route_id_gtfs']]
-            if not trips_match.empty:
-                trip_id = trips_match['trip_id'].iloc[0]
-                stops_trip = stop_times[stop_times['trip_id'] == trip_id]
-                stop_ids = stops_trip['stop_id'].unique()
-                fermate_linea = stops[stops['stop_id'].isin(stop_ids)].copy()
-                fermate_linea['route_id'] = row['route_id']
-                colore = palette_opt[idx % len(palette_opt)]
-                fermate_linea['color'] = colore
-                fermate_ottimizzate = pd.concat([fermate_ottimizzate, fermate_linea], ignore_index=True)
-
-        if fermate_ottimizzate.empty:
-            st.warning("Nessuna fermata trovata per le corse ottimizzate selezionate.")
-        else:
-            fermate_ottimizzate['stop_lat'] = fermate_ottimizzate['stop_lat'].astype(float)
-            fermate_ottimizzate['stop_lon'] = fermate_ottimizzate['stop_lon'].astype(float)
-
-            m_opt = folium.Map(
-                location=[fermate_ottimizzate['stop_lat'].mean(), fermate_ottimizzate['stop_lon'].mean()],
-                zoom_start=12
-            )
-
-            for _, row in fermate_ottimizzate.iterrows():
-                folium.CircleMarker(
-                    location=(row['stop_lat'], row['stop_lon']),
-                    radius=5,
-                    color=row['color'],
-                    fill=True,
-                    fill_color=row['color'],
-                    fill_opacity=0.8,
-                    tooltip=row['stop_name']
-                ).add_to(m_opt)
-
-            st_folium(m_opt, width=700, height=500)
-            st.markdown("**Figura:** Mappa interattiva delle fermate associate alle corse ottimizzate.")
-
-            # Tabella fermate ottimizzate
-            st.subheader("Fermate coinvolte nelle corse ottimizzate")
-            st.dataframe(fermate_ottimizzate[['route_id', 'stop_name', 'stop_lat', 'stop_lon']].drop_duplicates().sort_values(by='route_id'))
-
-    except FileNotFoundError as e:
-        st.error(f"File mancante: {e.filename}")
-else:
-    st.warning("Dati delle corse ottimizzate non caricati. Impossibile creare la mappa.")
+    st.error(f"File mancante: {e.filename}")
