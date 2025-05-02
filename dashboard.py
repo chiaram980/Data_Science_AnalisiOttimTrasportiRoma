@@ -137,7 +137,7 @@ try:
 
 except Exception as e:
     st.error(f"Errore nel caricamento dei file delle fermate: {e}")
-
+st.subheader("Mappa delle fermate associate alle corse ottimizzate")    
 
 # =================== Output del modello prescrittivo: ottimizzazione delle corse ===================
 
@@ -207,8 +207,6 @@ except FileNotFoundError as e:
     st.error(f"File non trovato: {e.filename}")
 
 # =================== Mappa fermate delle corse selezionate (ottimizzate) ===================
-st.subheader("Mappa delle fermate associate alle corse ottimizzate")
-
 if 'df_ottimizzato' in locals():
     try:
         if 'routes' not in locals():
