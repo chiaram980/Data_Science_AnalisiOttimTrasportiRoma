@@ -137,8 +137,6 @@ try:
 
 except Exception as e:
     st.error(f"Errore nel caricamento dei file delle fermate: {e}")
-st.subheader("Mappa delle fermate associate alle corse ottimizzate")    
-
 # =================== Output del modello prescrittivo: ottimizzazione delle corse ===================
 
 st.subheader("Output del modello prescrittivo: ottimizzazione delle corse (fasce orarie multiple)")
