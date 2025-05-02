@@ -107,29 +107,6 @@ st.download_button("Scarica CSV", data=filtered.to_csv(index=False).encode('utf-
 
 # ========== Output modello prescrittivo ==========
 
-file1, file2 = "ottimizzazione_dashboard_20250325_112654.csv", "ottimizzazione_dashboard_20250325_113839.csv"
-try:
-    df1, df2 = pd.read_csv(file1), pd.read_csv(file2)
-    df1["fascia_oraria"], df2["fascia_oraria"] = "13-14", "09-10"
-    df_opt = pd.concat([df1, df2], ignore_index=True)
-    df_opt['hour'] = df_opt['hour'].astype(str)
-
-    st.sidebar.header("Filtri corse ottimizzate")
-    fasce = st.sidebar.multiselect("Fascia oraria:", df_opt['fascia_oraria'].unique(), default=list(df_opt['fascia_oraria'].unique()))
-    routes_opt = st.sidebar.multiselect("Linee:", sorted(df_opt['route_id'].unique()), default=sorted(df_opt['route_id'].unique()), key="opt_routes")
-    df_opt_filt = df_opt[df_opt['fascia_oraria'].isin(fasce) & df_opt['route_id'].isin(routes_opt)]
-    df_ottimizzato = df_opt_filt.copy()
-
-    st.subheader("Corse extra suggerite")
-    fig_bar_opt = px.bar(df_opt_filt, x="route_id", y="extra_trips", color="fascia_oraria", barmode="group")
-    st.plotly_chart(fig_bar_opt, use_container_width=True)
-
-    st.subheader("Tabella corse ottimizzate")
-    st.dataframe(df_opt_filt.sort_values(by="extra_trips", ascending=False))
-    st.metric("Totale corse extra", int(df_opt_filt['extra_trips'].sum()))
-    st.metric("Riduzione stimata complessiva (minuti)", f"{df_opt_filt['estimated_impact'].sum():.2f}")
-
- # ========== Output modello prescrittivo ==========
 try:
     file1, file2 = "ottimizzazione_dashboard_20250325_112654.csv", "ottimizzazione_dashboard_20250325_113839.csv"
     df1, df2 = pd.read_csv(file1), pd.read_csv(file2)
@@ -153,7 +130,7 @@ try:
     st.metric("Riduzione stimata complessiva (minuti)", f"{df_opt_filt['estimated_impact'].sum():.2f}")
 
     # ========== Mappa fermate ottimizzate ==========
-    with st.expander(" Visualizza mappa delle fermate ottimizzate"):
+    with st.expander("Visualizza mappa delle fermate ottimizzate"):
         try:
             routes, trips, stops = carica_dataset_gtfs()
             routes_filt = filtra_routes(routes, df_ottimizzato['route_id'].unique())
