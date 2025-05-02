@@ -166,4 +166,4 @@ try:
          #   st.error(f"Errore durante la generazione della mappa fermate ottimizzate: {e}")
           #  df_ottimizzato = None
 #except Exception as e:
-    st.error(f"Errore durante il caricamento dei file prescrittivi: {e}")
+   # st.error(f"Errore durante il caricamento dei file prescrittivi: {e}")
