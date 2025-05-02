@@ -102,26 +102,42 @@ st.metric("Ritardo medio complessivo (min)", f"{media_ritardo:.2f}")
 csv = filtered_data.to_csv(index=False).encode('utf-8')
 st.download_button("Scarica CSV", data=csv, file_name="ritardi_filtrati.csv", mime="text/csv")
 
-# ======================== Sezione 6: Fermate per Linea ========================
 
-
-
+# ======================== Sezione 6: Caricamento e filtro fermate ========================
 try:
     routes = pd.read_csv("routes.txt", dtype=str, low_memory=False)
     trips = pd.read_csv("trips.txt", dtype=str, low_memory=False)
     stops = pd.read_csv("stops.txt", dtype=str, low_memory=False)
 
-    routes = routes[(routes['agency_id'] == 'OP1') & (routes['route_type'] == '3')]
-    route_ids = sorted(routes['route_id'].unique())
+    # Lista route_id della dashboard
+    route_ids_dashboard = [
+        'Linea 73', 'Linea 664', 'Linea 107', 'Linea 64', 'Linea 063', 'Linea 058F', 'Linea 990L', 'Linea 336',
+        'Linea 716', 'Linea 338', 'Linea 762', 'Linea 360', 'Linea 507', 'Linea 913', 'Linea 766', 'Linea 515'
+    ]
 
-    # Caricamento stop_times dal file parquet su Google Drive
+    # Normalizzazione ID GTFS
+    route_ids_gtfs = [rid.replace("Linea ", "").strip() for rid in route_ids_dashboard]
+
+    # Filtra routes
+    routes = routes[(routes['agency_id'] == 'OP1') & (routes['route_type'] == '3') & (routes['route_id'].isin(route_ids_gtfs))]
+
+    # Filtra trips in base a route_id
+    trips_filtrati = trips[trips['route_id'].isin(routes['route_id'])]
+    trip_ids_filtrati = trips_filtrati['trip_id'].unique()
+
+    # Carica e filtra stop_times dal Parquet su Google Drive
     file_id = "1Qx7jVKObRN79CLJwIy9Jzh0VwJ2D9dWZ"
     download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
     response = requests.get(download_url, stream=True)
     response.raise_for_status()
-    stop_times = pd.read_parquet(io.BytesIO(response.content))
+    stop_times_full = pd.read_parquet(io.BytesIO(response.content))
+
+    # Filtra solo i trip_id desiderati
+    stop_times = stop_times_full[stop_times_full['trip_id'].isin(trip_ids_filtrati)]
+
 except Exception as e:
     st.error(f"Errore nel caricamento dei file delle fermate: {e}")
+
 
 # =================== Output del modello prescrittivo: ottimizzazione delle corse ===================
 
