@@ -128,6 +128,8 @@ try:
     st.dataframe(df_opt_filt.sort_values(by="extra_trips", ascending=False))
     st.metric("Totale corse extra", int(df_opt_filt['extra_trips'].sum()))
     st.metric("Riduzione stimata complessiva (minuti)", f"{df_opt_filt['estimated_impact'].sum():.2f}")
+except Exception as e:
+    st.error(f"Errore durante il caricamento dei dati prescrittivi: {e}")    
 
 # ========== Mappa fermate ottimizzate ==========
 if st.checkbox("📍 Visualizza mappa delle fermate ottimizzate"):
