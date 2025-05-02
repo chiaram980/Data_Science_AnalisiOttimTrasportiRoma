@@ -130,8 +130,8 @@ try:
     st.metric("Riduzione stimata complessiva (minuti)", f"{df_opt_filt['estimated_impact'].sum():.2f}")
 
 # ========== Mappa fermate ottimizzate ==========
-if st.checkbox("Visualizza mappa delle fermate ottimizzate"):
-    try:
+try:
+    if st.checkbox("Visualizza mappa delle fermate ottimizzate"):
         routes, trips, stops = carica_dataset_gtfs()
         routes_filt = filtra_routes(routes, df_ottimizzato['route_id'].unique())
         trips_filt = trips[trips['route_id'].isin(routes_filt['route_id'])]
@@ -165,6 +165,7 @@ if st.checkbox("Visualizza mappa delle fermate ottimizzate"):
             )
         else:
             st.info("Nessuna fermata trovata per i filtri selezionati.")
-    except Exception as e:
-        st.error(f"Errore durante la generazione della mappa fermate ottimizzate: {e}")
+except Exception as e:
+    st.error(f"Errore durante la generazione della mappa fermate ottimizzate: {e}")
+
 
