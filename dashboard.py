@@ -119,6 +119,12 @@ try:
     fasce = st.sidebar.multiselect("Fascia oraria:", df_opt['fascia_oraria'].unique(), default=list(df_opt['fascia_oraria'].unique()))
     routes_opt = st.sidebar.multiselect("Linee:", sorted(df_opt['route_id'].unique()), default=sorted(df_opt['route_id'].unique()), key="opt_routes")
     df_opt_filt = df_opt[df_opt['fascia_oraria'].isin(fasce) & df_opt['route_id'].isin(routes_opt)]
+    df_ottimizzato = df_opt_filt.copy()
+
+    st.subheader("Corse extra suggerite")
+    fig_bar_opt = px.bar(df_opt_filt, x="route_id", y="extra_trips", color="fascia_oraria", barmode="group")
+    st.plotly_chart(fig_bar_opt, use_container_width=True)
+
 
     st.subheader("Corse extra suggerite")
     fig_bar_opt = px.bar(df_opt_filt, x="route_id", y="extra_trips", color="fascia_oraria", barmode="group")
