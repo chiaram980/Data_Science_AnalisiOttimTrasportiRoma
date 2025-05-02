@@ -8,4 +8,3 @@ seaborn>=0.11
 requests>=2.26
 gdown>=4.4
 pyarrow>=6.0
-pillow
