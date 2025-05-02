@@ -129,9 +129,32 @@ try:
     st.metric("Totale corse extra", int(df_opt_filt['extra_trips'].sum()))
     st.metric("Riduzione stimata complessiva (minuti)", f"{df_opt_filt['estimated_impact'].sum():.2f}")
 
+ # ========== Output modello prescrittivo ==========
+
+file1, file2 = "ottimizzazione_dashboard_20250325_112654.csv", "ottimizzazione_dashboard_20250325_113839.csv"
+try:
+    df1, df2 = pd.read_csv(file1), pd.read_csv(file2)
+    df1["fascia_oraria"], df2["fascia_oraria"] = "13-14", "09-10"
+    df_opt = pd.concat([df1, df2], ignore_index=True)
+    df_opt['hour'] = df_opt['hour'].astype(str)
+
+    st.sidebar.header("Filtri corse ottimizzate")
+    fasce = st.sidebar.multiselect("Fascia oraria:", df_opt['fascia_oraria'].unique(), default=list(df_opt['fascia_oraria'].unique()))
+    routes_opt = st.sidebar.multiselect("Linee:", sorted(df_opt['route_id'].unique()), default=sorted(df_opt['route_id'].unique()), key="opt_routes")
+    df_opt_filt = df_opt[df_opt['fascia_oraria'].isin(fasce) & df_opt['route_id'].isin(routes_opt)]
+    df_ottimizzato = df_opt_filt.copy()
+
+    st.subheader("Corse extra suggerite")
+    fig_bar_opt = px.bar(df_opt_filt, x="route_id", y="extra_trips", color="fascia_oraria", barmode="group")
+    st.plotly_chart(fig_bar_opt, use_container_width=True)
+
+    st.subheader("Tabella corse ottimizzate")
+    st.dataframe(df_opt_filt.sort_values(by="extra_trips", ascending=False))
+    st.metric("Totale corse extra", int(df_opt_filt['extra_trips'].sum()))
+    st.metric("Riduzione stimata complessiva (minuti)", f"{df_opt_filt['estimated_impact'].sum():.2f}")
+
     # ========== Mappa fermate ottimizzate ==========
-    if 'df_ottimizzato' in locals():
-        st.subheader("Mappa fermate delle corse ottimizzate")
+    with st.expander(" Visualizza mappa delle fermate ottimizzate"):
         try:
             routes, trips, stops = carica_dataset_gtfs()
             routes_filt = filtra_routes(routes, df_ottimizzato['route_id'].unique())
@@ -140,7 +163,9 @@ try:
             stop_times_filt = stop_times[stop_times['trip_id'].isin(trips_filt['trip_id'].unique())]
 
             fermate = genera_mappa_fermate(
-                trips_filt, stop_times_filt, stops,
+                trips_filt,
+                stop_times_filt,
+                stops,
                 df_ottimizzato[['route_id', 'hour']].drop_duplicates()
             )
 
@@ -162,8 +187,11 @@ try:
                     fermate[['route_id', 'stop_name', 'stop_lat', 'stop_lon']]
                     .drop_duplicates().sort_values(by='route_id')
                 )
+            else:
+                st.info("Nessuna fermata trovata per i filtri selezionati.")
         except Exception as e:
             st.error(f"Errore durante la generazione della mappa fermate ottimizzate: {e}")
-            df_ottimizzato = None
+
 except Exception as e:
     st.error(f"Errore durante il caricamento dei file prescrittivi: {e}")
+
