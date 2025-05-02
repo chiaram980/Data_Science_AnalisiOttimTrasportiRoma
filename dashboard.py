@@ -166,6 +166,8 @@ if 'df_ottimizzato' in locals():
                 fermate[['route_id', 'stop_name', 'stop_lat', 'stop_lon']]
                 .drop_duplicates().sort_values(by='route_id')
             )
-    except:
-        pass  # Non mostra nulla se fallisce
+    
+      except Exception as e:
+    print("Errore:", e)
+    df_ottimizzato = None
 
