@@ -130,9 +130,8 @@ try:
     st.metric("Riduzione stimata complessiva (minuti)", f"{df_opt_filt['estimated_impact'].sum():.2f}")
 
  # ========== Output modello prescrittivo ==========
-
-file1, file2 = "ottimizzazione_dashboard_20250325_112654.csv", "ottimizzazione_dashboard_20250325_113839.csv"
 try:
+    file1, file2 = "ottimizzazione_dashboard_20250325_112654.csv", "ottimizzazione_dashboard_20250325_113839.csv"
     df1, df2 = pd.read_csv(file1), pd.read_csv(file2)
     df1["fascia_oraria"], df2["fascia_oraria"] = "13-14", "09-10"
     df_opt = pd.concat([df1, df2], ignore_index=True)
