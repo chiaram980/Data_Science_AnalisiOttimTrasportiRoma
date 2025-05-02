@@ -132,7 +132,7 @@ except Exception as e:
     st.error(f"Errore durante il caricamento dei dati prescrittivi: {e}")    
 
 # ========== Mappa fermate ottimizzate ==========
-if st.checkbox("📍 Visualizza mappa delle fermate ottimizzate"):
+if st.checkbox("Visualizza mappa delle fermate ottimizzate"):
     try:
         routes, trips, stops = carica_dataset_gtfs()
         routes_filt = filtra_routes(routes, df_ottimizzato['route_id'].unique())
