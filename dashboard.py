@@ -131,7 +131,7 @@ try:
 
     # ========== Mappa fermate ottimizzate ==========
 
-  # =================== Mappa fermate delle corse selezionate (ottimizzate) ===================
+# =================== Mappa fermate delle corse selezionate (ottimizzate) ===================
 
 if 'df_ottimizzato' in locals():
     st.subheader("Mappa fermate delle corse ottimizzate")
@@ -166,8 +166,9 @@ if 'df_ottimizzato' in locals():
                 fermate[['route_id', 'stop_name', 'stop_lat', 'stop_lon']]
                 .drop_duplicates().sort_values(by='route_id')
             )
-    
-      except Exception as e:
-    print("Errore:", e)
-    df_ottimizzato = None
+
+    except Exception as e:
+        st.error(f"Errore durante la generazione della mappa fermate ottimizzate: {e}")
+        df_ottimizzato = None
+
 
