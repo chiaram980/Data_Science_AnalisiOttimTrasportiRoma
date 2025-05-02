@@ -135,7 +135,7 @@ try:
 
 if 'df_ottimizzato' in locals():
     st.subheader("Mappa fermate delle corse ottimizzate")
-    
+
     try:
         routes, trips, stops = carica_dataset_gtfs()
         routes_filt = filtra_routes(routes, df_ottimizzato['route_id'].unique())
@@ -143,19 +143,29 @@ if 'df_ottimizzato' in locals():
         stop_times = carica_stop_times("1Qx7jVKObRN79CLJwIy9Jzh0VwJ2D9dWZ")
         stop_times_filt = stop_times[stop_times['trip_id'].isin(trips_filt['trip_id'].unique())]
 
-        fermate = genera_mappa_fermate(trips_filt, stop_times_filt, stops, df_ottimizzato[['route_id', 'hour']].drop_duplicates())
+        fermate = genera_mappa_fermate(
+            trips_filt, stop_times_filt, stops,
+            df_ottimizzato[['route_id', 'hour']].drop_duplicates()
+        )
 
         if not fermate.empty:
             fermate[['stop_lat', 'stop_lon']] = fermate[['stop_lat', 'stop_lon']].astype(float)
-            m = folium.Map(location=[fermate['stop_lat'].mean(), fermate['stop_lon'].mean()], zoom_start=12)
+            m = folium.Map(
+                location=[fermate['stop_lat'].mean(), fermate['stop_lon'].mean()],
+                zoom_start=12
+            )
             for _, r in fermate.iterrows():
                 folium.CircleMarker(
                     location=[r['stop_lat'], r['stop_lon']],
-                    radius=5, color=r['color'], fill=True, fill_color=r['color'],
-                    fill_opacity=0.8, tooltip=r['stop_name']
+                    radius=5, color=r['color'], fill=True,
+                    fill_color=r['color'], fill_opacity=0.8,
+                    tooltip=r['stop_name']
                 ).add_to(m)
             st_folium(m, width=700, height=500)
-            st.dataframe(fermate[['route_id', 'stop_name', 'stop_lat', 'stop_lon']].drop_duplicates().sort_values(by='route_id'))
+            st.dataframe(
+                fermate[['route_id', 'stop_name', 'stop_lat', 'stop_lon']]
+                .drop_duplicates().sort_values(by='route_id')
+            )
     except:
-        pass  # Non mostra nulla se la mappa fallisce
+        pass  # Non mostra nulla se fallisce
 
